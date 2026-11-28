@@ -10,7 +10,7 @@
 # Ignite (IGNITE_SPLASH) spare players, EXECUTED there; no row damages him.
 setup:
   - pad: ""
-  - preflight: "-2 -13 22 13"
+  - preflight: "-2 -13 33 13"
   - difficulty: normal
   - trace: on
   - cmd: "time set 18000"
@@ -67,7 +67,7 @@ SF2:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -94,7 +94,7 @@ SF3:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -115,7 +115,7 @@ SF4:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - save_blocks: "6 1 0 6 1 0"
   - cmd: "setblock ~6 ~1 ~0 minecraft:stone"
@@ -137,7 +137,7 @@ SF5:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -166,7 +166,7 @@ SF6:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - cmd: "rpg give bone_whistle"
   - wait: 2
@@ -200,7 +200,7 @@ SF7:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -226,7 +226,7 @@ SF8:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -247,7 +247,7 @@ SF9:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone

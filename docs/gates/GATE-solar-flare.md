@@ -20,8 +20,8 @@ queue, the lint, the two asks and the summons by `SolarFlareGateCommandTest`.
   nine. 27 scenarios (`SolarFlareGateCommandTest`). Every setup begins with `pad:`.
 - **He answers TWO questions: SM7 (Smolder's rings), then SF9 (Solar Flare's), the command's last step.** Each waits 3600
   ticks.
-- **SM1 saves Smolder on Q in his Fire Mage build, and SF1 saves Solar Flare on Q in his Fire Ranger build** (CARRIED
-  STATE). The run puts back his own class and element at its end.
+- **SM1 picks Smolder into his Fire Mage build and SF1 Solar Flare into his Fire Ranger build, and the run puts his
+  stored builds back whole at its end** (the seat's D2, #341), with his own class and element.
 - This command REPLACES the one `GATE-smolder.md` names; that gate's rows are unchanged.
 
 **How long it runs (an ESTIMATE from the scenarios' `wait:` steps, not a measurement):** this gate's waits sum to **1388
@@ -48,15 +48,18 @@ three and a half minutes of rows, then the two questions.**
 
 1. The seat's approval of the code AND both gates from origin; Ben's own "ready".
 2. **The heads:** `git ls-remote --heads origin` for master, `feat/regen-tooltips-sheet-unit`, `feat/smolder`,
-   `feat/water-douses-scorch`, `feat/solar-flare` and `feat/smolder-gate`, equal to what the seat diffed; CI green on
+   `feat/water-douses-scorch`, `feat/solar-flare`, `feat/selftest-restore-builds` and `feat/smolder-gate`, equal to what
+   the seat diffed; CI green on
    each, bound by `headSha`. `git status --porcelain` prints nothing and `git rev-parse HEAD` equals `feat/smolder-gate`'s
    head.
 3. **No JVM:** `Get-CimInstance Win32_Process -Filter "Name='java.exe'"` counts 0.
 4. **The backup**, to a NEW folder `C:\Users\Neb91\IdeaProjects\rpg-run-backups\<date>-pre-smolder-solar-flare`:
    `run\world`, `run\plugins\Rpg` with their file counts and copy counts, his player `.dat` with its bytes, **his build
-   file's bytes and his profile's `archetypeId` and element quoted before the boot.** The run restores his CELL, not a
-   saved pick: **SM1 saves Q = Smolder in mage/fire and SF1 saves Q = Solar Flare in ranger/fire, and both stay.** After
-   the run his build file is read again and both changes are named.
+   file's bytes and his profile's `archetypeId` and element quoted before the boot.** SM1 and SF1 pick into his
+   mage/fire and ranger/fire cells, and **the run puts his stored builds back whole** (D2, #341: `CAPTURED … builds=[…]`
+   and `RESTORED … builds=[…]` equal, with no `NOT-RESTORED=builds(…)`). **His build file's bytes before the boot EQUAL
+   its bytes after /stop** (one named exception: with NO build file before, a run that changed one leaves a file holding
+   no cell; `PLAN-selftest-restore-builds.md`).
 5. **The world's saved difficulty,** read from the decompressed `level.dat`, before and after the run.
 6. **Config:** `dev-pack-on-join: true`. No `run\rpgfight`.
 7. **"BOOTING NOW", in its own message, BEFORE the boot command**, with: "Ben: do NOT log in until I tell you R0 passed."
@@ -71,9 +74,13 @@ three and a half minutes of rows, then the two questions.**
 - **R0a:** `[Rpg] Build: <sha>`, `feat/smolder-gate`'s head as `git ls-remote --heads origin feat/smolder-gate` prints it,
   shortened. Not `-dirty`, not `unknown`.
 - **R0b:** on the DEPLOYED jar, `docs/gates/GATE-smolder-r0b.ps1` **21 / 0, 3 / 0, 3 / 0** (unchanged) AND
-  `docs/gates/GATE-solar-flare-r0b.ps1`: before `'--- absent'` **13 `PRESENT`, 0 `ABSENT`**; between `'--- absent'` and
-  `'--- controls'` **2 `ABSENT`, 0 `PRESENT`**; after `'--- controls'` **2 `PRESENT`, 0 `ABSENT`**. Each `Has` and
-  `ValueLine` needle checked ABSENT in `98ad57c6`'s main sources first (`git grep -F`, 0 files each).
+  `docs/gates/GATE-solar-flare-r0b.ps1`: before `'--- absent'` **15 `PRESENT`, 0 `ABSENT`** (two of them D2's, #341);
+  between `'--- absent'` and `'--- controls'` **2 `ABSENT`, 0 `PRESENT`**; after `'--- controls'` **2 `PRESENT`, 0
+  `ABSENT`**. Each `Has` and `ValueLine` needle checked ABSENT first: Solar Flare's in `98ad57c6`'s main sources, D2's in
+  `78857b8a`'s (`git grep -F`, 0 files each).
+- **D2's lines, read at the run's start and end:** `SELFTEST RUN CAPTURED … builds=[…]` and `SELFTEST RUN RESTORED …
+  builds=[…]`, the two `builds=` fields EQUAL, and no `NOT-RESTORED=builds(…)`; then one `BUILDS restore write settled
+  ok=true` (only if a row changed his builds; an unchanged build is not written).
 - **R0c:** `Loaded 11 abilities, 51 visuals, 5 statuses, 7 elements, 28 enchants, 3 pools, 6 fragments, 6 aspects, 27
   weapons, 1 shields, 28 armor, 5 tools, 8 accessories, …` (abilities 11: Smolder and Solar Flare added, both placeholders
   deleted; visuals 51: Smolder's two and Solar Flare's two) and `Mint-on-craft: 42 indexed, 42 claiming, of 61 gear
@@ -94,7 +101,11 @@ three and a half minutes of rows, then the two questions.**
   the first whole t with 6 t / 15 >= d. The later ring ticks are region tasks (the global scheduler), as Smolder's.
 - **Burns:** the first 19 ticks after a hit, then every 20 (READ, `GATE-smolder.md`, THE CLOCK).
 
-## THE COORDINATE TABLE (from his stand F, block-centred, feet y 0, eye y 1.62; he faces due east, yaw -90, pitch 0)
+## THE COORDINATE TABLE (from his stand G, block-centred, feet y 0, eye y 1.62; he faces due east, yaw -90, pitch 0)
+
+**D3 (the seat, 2026-11-27, applied here as in GATE-smolder.md): every casting row (SF2 to SF9) stands him at G = F +
+(10, 0)** (F is the pad's stand). Mobs are summoned relative to him, so every offset below is from G and every distance,
+tick and health is unchanged. Add 10 to x for the figure from F.
 
 | row | what | at | notes |
 |---|---|---|---|
@@ -107,13 +118,23 @@ three and a half minutes of rows, then the two questions.**
 | SF5 | the wall; u | blocks (3, 1, -2..2), faces at 2.5; u at (4.5, 0, 0) | the side shots meet it at z -1.443 and +1.443 |
 | SF6 | his wolf; w | (14, 0, -2); (16, 0, 2) | both inside ring 2 |
 
-- **Every ring against the pad.** The interior is columns x -2..45, z -13..13 from his block (`SelfTestPadShape`), and he
-  stands block-centred, so its edges are **2.5 west, 45.5 east and 13.5 to either side** of him. The centre ring at range
-  reaches x 21, z -6..6; **each side ring reaches z 7.5 + 6 = 13.5: EXACTLY the interior's edge, inside it** (executed,
-  `SolarFlareGateArithmeticTest.everyRingStaysInsideThePadsInterior`). **No aim does better:** a side origin's distance to
-  the side is 15 sin 30 whatever the aim's yaw or pitch, and a turned aim pushes one side further out. The rim (barrier
-  blocks) lies beyond 13.5; no body can stand there. The flights stay inside x 0..15, |z| <= 7.5.
-- The preflight box is `-2 -13 22 13`, inside the interior.
+- **Every ring against the pad, from EVERY origin a row uses (executed:
+  `SolarFlareGateArithmeticTest.everyRingFromEveryOriginLiesInsideTheInteriorAndThePreflight`).** Edges from F: the
+  interior **x -2.5 .. 45.5, z -13.5 .. 13.5**; the preflight `-2 -13 33 13` **x -2.5 .. 33.5, z -13.5 .. 13.5**.
+
+| origin (from G) | from F | rows | x reach from F (origin +/- 6) | z reach | interior | preflight |
+|---|---|---|---|---|---|---|
+| range n=2, (15, 0) | (25, 0) | SF2, SF5, SF6, SF9 | 19 .. 31 | -6 .. 6 | yes | yes |
+| range n=1, n=3, (12.990, -/+7.5) | (22.990, -/+7.5) | the same | 16.99 .. 28.99 | -13.5 .. 13.5 | yes (13.5 = the edge) | yes |
+| s8's feet, (8, 0) | (18, 0) | SF3 | 12 .. 24 | -6 .. 6 | yes | yes |
+| the stone's face, (5.5, 0) | (15.5, 0) | SF4 | 9.5 .. 21.5 | -6 .. 6 | yes | yes |
+| the wall, (2.5, 0) and (2.5, -/+1.443) | (12.5, …) | SF5 | 6.5 .. 18.5 | -7.443 .. 7.443 | yes | yes |
+
+  **The first version of this table checked the RANGE origins alone, from F, and was wrong:** SF5's wall bursts 2.5 from
+  F reached x -3.5, outside the interior's -2.5. Found while applying D3, before any approval; G fixes it (6.5). **The side
+  rings reach z 13.5, EXACTLY the interior's edge**, and no aim does better: a side origin's distance to the side is
+  15 sin 30 whatever the aim's yaw or pitch. The rim (barrier blocks) lies beyond 13.5; no body can stand there.
+- The preflight box is `-2 -13 33 13`, inside the interior; every staged body lies inside it (the same test).
 - **Health, executed:** `MobScaling.maxHealth(600, false, true, 100)` = 3000 (a summoned pad zombie's score reads 100,
   `GATE-blast-fungus.md`; each row's first PROBE holds it).
 
@@ -146,22 +167,22 @@ crit=false`, or every one `sent=500.000 crit=true`, `triggerScore=100`. A zombie
 - **`SOLAR_FLARE cast tick=C`; `shot n=1 dir=-120.000 0.000 tick=C`, `n=2 dir=-90.000 0.000`, `n=3 dir=-60.000 0.000`**
   (pitch prints `0.000` or `-0.000`: the sign of a zero, not a reading).
 - `item_display` within 24: **3** at C+5; **0** at C+20.
-- **`burst n=1 cause=range origin=F+(12.990, 1.620, -7.500) tick=C+15`, `n=2 … F+(15.000, 1.620, 0.000)`, `n=3 …
-  F+(12.990, 1.620, 7.500)`**, all on C+15 (the world coordinates are F's plus these).
+- **`burst n=1 cause=range origin=G+(12.990, 1.620, -7.500) tick=C+15`, `n=2 … G+(15.000, 1.620, 0.000)`, `n=3 …
+  G+(12.990, 1.620, 7.500)`**, all on C+15 (the world coordinates are F's plus these).
 - **z4: one `SOLAR_FLARE hit n=2 … dist=4.000 tick=C+25 sent=250.000`** (or 500.000) and its PLAYERHIT `source=solar_flare
   element=fire … triggerScore=100`; six burns of 125 from C+44; at C+160 **`2000.000`** (crit **`1750.000`**). **z7: no hit,
   `3000.000`.**
 
 ### SF3 — A MOB STOPS IT
 
-- **`burst n=2 cause=mob origin=F+(8.000, 0.000, 0.000) tick=C+8`** (s8's own feet: its face is met on the C+8 step).
+- **`burst n=2 cause=mob origin=G+(8.000, 0.000, 0.000) tick=C+8`** (s8's own feet: its face is met on the C+8 step).
 - **s8: `hit n=2 dist=0.000 tick=C+8`, one hit only** (no direct hit is added). **s13: `hit n=2 dist=5.000 tick=C+21`.**
   Shots 1 and 3 burst at range on C+15 and reach neither.
 - At C+160: s8 and s13 each **`2000.000`** (crit **`1750.000`**).
 
 ### SF4 — A BLOCK STOPS IT
 
-- `PROBE_BLOCKS` the stone is there. **`burst n=2 cause=block origin=F+(5.500, 1.620, 0.000) tick=C+5`** (the face the
+- `PROBE_BLOCKS` the stone is there. **`burst n=2 cause=block origin=G+(5.500, 1.620, 0.000) tick=C+5`** (the face the
   trace met). **b: `hit n=2 dist=2.121 tick=C+11`**; shots 1 and 3 burst at range and do not reach it.
 - At C+160: **`2000.000`** (crit **`1750.000`**). The stone is put back by the run.
 
@@ -170,7 +191,7 @@ crit=false`, or every one `sent=500.000 crit=true`, `triggerScore=100`. A zombie
 - **First cast, t:** **`hit n=3 dist=3.643 tick=C+25`** and **`hit n=2 dist=4.123 tick=C+26`**: 250 from each (F5);
   six burns of 125; at C+160 **`1750.000`** (crit **`1250.000`**).
 - **Then the wall (5 blocks at 3 east, head height) and u behind it, a second cast at C':** **`burst n=2 cause=block
-  origin=F+(2.500, 1.620, 0.000) tick=C'+2`**, **`n=1 … F+(2.500, 1.620, -1.443) tick=C'+3`**, **`n=3 … F+(2.500, 1.620,
+  origin=G+(2.500, 1.620, 0.000) tick=C'+2`**, **`n=1 … G+(2.500, 1.620, -1.443) tick=C'+3`**, **`n=3 … G+(2.500, 1.620,
   1.443) tick=C'+3`**. **u: `hit n=2 dist=2.000 tick=C'+7`, `hit n=1 dist=2.466 tick=C'+10`, `hit n=3 dist=2.466
   tick=C'+10`**: all three (F5). Six burns of 125. At C'+160 **`1500.000`** (crit **`750.000`**).
 - **Why each ring reaches u:** the wall stops every shot 2.5 to 2.887 out, so the three origins lie within 2.466 of u at
@@ -224,10 +245,12 @@ crit=false`, or every one `sent=500.000 crit=true`, `triggerScore=100`. A zombie
 
 ## R0b, RUN BEFORE COMMIT
 
-On `paper/target/rpg-0.1.0-SNAPSHOT.jar` built from this tree (2026-11-27 20:19, `./mvnw -q package -DskipTests`,
-before the commit): **`GATE-solar-flare-r0b.ps1` 13 `PRESENT` / 0 `ABSENT`, then 2 `ABSENT` / 0, then 2 `PRESENT` / 0;
-`GATE-smolder-r0b.ps1` 21 / 0, 3 / 0, 3 / 0, unchanged; both as predicted.** A reading of a jar on this machine, not of
-the deployed one: R0b proper is the deployed jar's.
+On `paper/target/rpg-0.1.0-SNAPSHOT.jar` built from this tree (2026-11-27 20:43, `./mvnw -q package -DskipTests`,
+before the commit, with D2 and D3): **`GATE-solar-flare-r0b.ps1` 15 `PRESENT` / 0 `ABSENT`, then 2 `ABSENT` / 0, then 2
+`PRESENT` / 0; `GATE-smolder-r0b.ps1` 21 / 0, 3 / 0, 3 / 0, unchanged; both as predicted.** The first run after D2 read
+14 / 1: the needle `BUILDS restore write settled ok=` sits in the anonymous `Port` class (`SelfTestSnapshot$N.class`),
+not `SelfTestSnapshot.class`; it was moved to the CAPTURED field's ` builds=` (absent at `78857b8a`). (The run at 20:19,
+before D2, read 13 / 0, 2 / 0, 2 / 0 against its own 13.) A reading of a jar on this machine, not of the deployed one.
 
 ## THE GATE'S MUTATIONS
 

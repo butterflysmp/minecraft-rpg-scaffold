@@ -178,17 +178,34 @@ class SolarFlareGateArithmeticTest {
 
     // ---------------------------------------------------------------- the box
 
+    /**
+     * THE SEAT'S D3 (2026-11-27), applied here too: EVERY origin every row uses, not only the range ones. Every cast stands
+     * him at G = F + 10 east. The first version of this row checked the RANGE origins alone, from F, and passed while SF5's
+     * wall bursts (2.5 from F) reached 3.5 WEST of F, outside the interior's 2.5: corrected before any boot. Origins below
+     * are from G; reach is origin +/- 6; edges are from F (interior columns x -2..45, z -13..13; the preflight -2 -13 33 13).
+     */
     @Test
-    void everyRingStaysInsideThePadsInterior() {
-        // Interior columns -13..13 and -2..45 from his block; he stands block-centred, so the interior's edge is 13.5 to
-        // either side and 45.5 east of him, 2.5 west.
-        for (double off : new double[] {-30, 0, 30}) {
-            Vec3 o = range(off);
-            assertTrue(Math.abs(o.z()) + 6 <= 13.5 + 1e-9, "ring reach z " + (Math.abs(o.z()) + 6));
-            assertTrue(o.x() + 6 <= 45.5, "ring reach x");
-            assertTrue(o.x() - 6 >= -2.5, "ring reach x west");
+    void everyRingFromEveryOriginLiesInsideTheInteriorAndThePreflight() {
+        double g = 10;
+        double sideZ = 2.5 * Math.tan(Math.toRadians(30));
+        List<Vec3> origins = List.of(range(-30), range(0), range(30),            // SF2, SF5, SF6, SF9 at range
+                new Vec3(8, EYE, 0),                                             // SF3: s8's feet
+                new Vec3(5.5, EYE, 0),                                           // SF4: the stone's face
+                new Vec3(2.5, EYE, -sideZ), new Vec3(2.5, EYE, 0), new Vec3(2.5, EYE, sideZ));   // SF5: the wall
+        for (Vec3 o : origins) {
+            double west = g + o.x() - 6, east = g + o.x() + 6, side = Math.abs(o.z()) + 6;
+            assertTrue(west >= -2.5 && east <= 45.5 && side <= 13.5 + 1e-9, "interior: " + o + " " + west + ".." + east + " z " + side);
+            assertTrue(west >= -2.5 && east <= 33.5 && side <= 13.5 + 1e-9, "preflight: " + o);
         }
+        assertEquals(6.5, g + 2.5 - 6, 1e-9, "the wall's west reach, from F");
+        assertEquals(-3.5, 2.5 - 6, 1e-9, "the same from F itself: the defect D3 names");
+        assertEquals(31.0, g + 15 + 6, 1e-9, "the centre range ring's east reach, from F");
         assertEquals(13.5, Math.abs(range(30).z()) + 6, 1e-9, "the side rings reach EXACTLY the interior's edge");
+        // Every staged body, from F: inside the preflight box.
+        double[][] bodies = {{29, 0}, {32, 0}, {18, 0}, {23, 0}, {17, -1.5}, {24, 4}, {14.5, 0}, {26, 2}, {24, -2}};
+        for (double[] b : bodies) {
+            assertTrue(b[0] >= -2.5 && b[0] <= 33.5 && Math.abs(b[1]) <= 13.5, b[0] + "," + b[1]);
+        }
     }
 
     // ---------------------------------------------------------------- SAFETY

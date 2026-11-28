@@ -1,6 +1,6 @@
 # GATE-solar-flare R0b (2026-11-27, feat/smolder-gate on feat/solar-flare on feat/water-douses-scorch): the deployed jar
-# carries Solar Flare (#340) and this gate. Run beside GATE-smolder-r0b.ps1, which covers #336, #337, #338.
-# Prediction: before '--- absent', 13 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 2 ABSENT and 0 PRESENT;
+# carries Solar Flare (#340), the builds restore (#341, D2) and this gate. Run beside GATE-smolder-r0b.ps1, which covers #336, #337, #338.
+# Prediction: before '--- absent', 15 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 2 ABSENT and 0 PRESENT;
 # after '--- controls', 2 PRESENT and 0 ABSENT.
 # Run: powershell -File <this> [-JarPath <jar>]
 param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
@@ -16,6 +16,8 @@ $ix = Bytes 'selftest/index.yml'
 $pl = Bytes 'io/github/butterflysmp/rpg/core/combat/PulseLine.class'
 $cw = Bytes 'io/github/butterflysmp/rpg/core/combat/CombatWorld.class'
 $as = Bytes 'io/github/butterflysmp/rpg/paper/content/AbilitySchema.class'
+$sb = Bytes 'io/github/butterflysmp/rpg/paper/selftest/SelfTestBuilds.class'
+$ss = Bytes 'io/github/butterflysmp/rpg/paper/selftest/SelfTestSnapshot.class'
 Entry 'content/abilities/solar_flare.yml'
 Entry 'content/visuals/solar_flare_trail.yml'
 Entry 'content/visuals/solar_flare_cast.yml'
@@ -29,6 +31,8 @@ Has $pl ' burst n=' 'PulseLine.class (F13: the burst line)'
 Has $cw 'spawnDisplayMarker' 'CombatWorld.class (F9: the scaled body)'
 Has $as '''s burst is ONE pulse front' 'AbilitySchema.class (F3: the burst block)'
 Has $sm 'Fire three great fireballs in a fan.' 'solar_flare.yml (F12, SEAT PLACEHOLDER)'
+Has $sb 'builds(store-refused)' 'SelfTestBuilds.class (D2: the restore)'
+Has $ss ' builds=' 'SelfTestSnapshot.class (D2: the CAPTURED and RESTORED field; the settle line lives in an anonymous class)'
 '--- absent'
 Entry 'content/abilities/ultimate_placeholder_ranger.yml'
 ValueLine $rf '  ultimate: ultimate_placeholder_ranger' 'ranger_fire.yml (the old default)'

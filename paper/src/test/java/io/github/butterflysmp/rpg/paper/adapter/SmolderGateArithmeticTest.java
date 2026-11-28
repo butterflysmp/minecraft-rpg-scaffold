@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * GATE-smolder's predictions, EXECUTED through the real functions before any boot (S-1; "a damage prediction names every
@@ -211,6 +212,35 @@ class SmolderGateArithmeticTest {
         assertEquals(10.5, PulseFront.horizontal(new Vec3(6, 0, -8), new Vec3(6, 0, 2.5)), 1e-9, "outside k1's blast");
         assertEquals(5.5, PulseFront.horizontal(new Vec3(6, 0, 2.5), new Vec3(6, 0, 8)), 1e-9, "outside k3's blast");
         assertFalse(20.0 < ZOMBIE_10, "one uncrit bolt kills a 10");
+    }
+
+    // ------------------------------------------------------------------ D3: every ring on the pad
+
+    /** The pad's interior, from his stand F (block-centred): columns x -2..45, z -13..13, so these edges. */
+    static final double WEST = -2.5, EAST = 45.5, SIDE = 13.5;
+    /** The setup's preflight, "-2 -12 30 12", as edges from F. */
+    static final double PF_WEST = -2.5, PF_EAST = 30.5, PF_SIDE = 12.5;
+
+    /**
+     * THE SEAT'S D3 (2026-11-27): rows cast from F reached x = -12, outside the pad. Every Smolder row now stands at
+     * G = F + 10 east, and SM4 and SM7 move him to G + 8. Each origin's whole reach (origin +/- 12 on x and z) lies inside
+     * the interior AND the preflight box. The figures are the gate's coordinate table.
+     */
+    @Test
+    void d3_everyRingFromEveryOriginLiesInsideTheInteriorAndThePreflight() {
+        double[] origins = {10, 18};   // G, and G + 8 (SM4, SM7)
+        for (double ox : origins) {
+            assertTrue(ox - 12 >= WEST && ox - 12 >= PF_WEST, "west " + (ox - 12));
+            assertTrue(ox + 12 <= EAST && ox + 12 <= PF_EAST, "east " + (ox + 12));
+            assertTrue(12 <= SIDE && 12 <= PF_SIDE, "sides 12");
+        }
+        assertEquals(-2.0, 10 - 12, 0.0, "G's west reach");
+        assertEquals(30.0, 18 + 12, 0.0, "G + 8's east reach");
+        // Every staged body, from F: inside the preflight box.
+        double[][] bodies = {{13, 0}, {16, 0}, {21.5, 0}, {22.5, 0}, {10, 4}, {16, 0}, {10, -11}, {29, 0}, {16, -3}};
+        for (double[] b : bodies) {
+            assertTrue(b[0] >= PF_WEST && b[0] <= PF_EAST && Math.abs(b[1]) <= PF_SIDE, b[0] + "," + b[1]);
+        }
     }
 
     // ------------------------------------------------------------------ SAFETY

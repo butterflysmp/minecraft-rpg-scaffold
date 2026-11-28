@@ -55,6 +55,12 @@ class SolarFlareGateCommandTest {
                 "no step deals him damage");
     }
 
+    /** D3 here too: every cast from G, against the preflight SolarFlareGateArithmeticTest checks. */
+    @Test
+    void d3_everySolarFlareCastIsMadeFromG() {
+        SmolderGateCommandTest.everyCastIsMadeFromG(loaded().gates().get("solar-flare"), "-2 -13 33 13");
+    }
+
     @Test
     void everyMobThisGateSummonsIsFrozenAndTagged_andEveryRowAfterSF1NeedsTheCell() {
         var mine = loaded().gates().get("solar-flare");

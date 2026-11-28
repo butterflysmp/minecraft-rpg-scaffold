@@ -62,6 +62,33 @@ class SmolderGateCommandTest {
                 && s.contains("\"selftest\"")), summons.toString());
     }
 
+    /** D3's G, the one stand every cast is made from: 10 east of the pad's stand, block-centred, facing east. */
+    static final String AT_G = "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0";
+
+    /**
+     * THE SEAT'S D3 (2026-11-27): every row that CASTS (a {@code drop: selected}) first stands him at G, so each ring's
+     * whole reach is on the pad ({@code SmolderGateArithmeticTest.d3_...}); and the setup's preflight is the box that
+     * test checks against.
+     */
+    static void everyCastIsMadeFromG(List<Scenario> rows, String preflight) {
+        assertEquals(preflight, rows.getFirst().steps().stream().filter(st -> st.verb() == Scenario.Verb.PREFLIGHT)
+                .findFirst().orElseThrow().arg());
+        for (Scenario s : rows) {
+            int firstDrop = -1, stand = -1;
+            for (int i = 0; i < s.steps().size(); i++) {
+                Scenario.Step st = s.steps().get(i);
+                if (st.verb() == Scenario.Verb.DROP && firstDrop < 0) firstDrop = i;
+                if (st.verb() == Scenario.Verb.CMD && st.arg().equals(AT_G) && stand < 0) stand = i;
+            }
+            if (firstDrop >= 0) assertTrue(stand >= 0 && stand < firstDrop, s.row() + ": casts before standing at G");
+        }
+    }
+
+    @Test
+    void d3_everySmolderCastIsMadeFromG() {
+        everyCastIsMadeFromG(loaded().gates().get("smolder"), "-2 -12 30 12");
+    }
+
     /** The stone verb takes nothing, as clear_inventory does, and every Smolder row converges it before it holds it. */
     @Test
     void theStoneVerbTakesNothing_andEveryStoneHoldFollowsIt() {

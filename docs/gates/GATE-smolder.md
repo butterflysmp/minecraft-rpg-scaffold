@@ -59,9 +59,11 @@ SM7 240; `awk` over the file's `- wait:` lines per row, 2026-11-27); the regen r
 3. **No JVM:** `Get-CimInstance Win32_Process -Filter "Name='java.exe'"` counts 0.
 4. **The backup**, to a NEW folder `C:\Users\Neb91\IdeaProjects\rpg-run-backups\<date>-pre-smolder`: `run\world`,
    `run\plugins\Rpg` with their file counts and copy counts, his player `.dat` with its bytes, **his build file's bytes
-   and his profile's `archetypeId` and element quoted before the boot.** The run's restore puts back his CELL (`RESTORED
-   … cell=<class>/<element>`) but NOT a saved loadout: **SM1 saves Q = Smolder in his mage/fire cell, and that stays**
-   (as `GATE-sunder.md`'s SU1 did). After the run his build file is read again and the change is named.
+   and his profile's `archetypeId` and element quoted before the boot.** SM1 picks Smolder into his mage/fire cell, and
+   **the run puts his stored builds back whole** (the seat's D2, #341: `CAPTURED … builds=[…]`, `RESTORED … builds=[…]`
+   with no `NOT-RESTORED=builds(…)`, read by named fields). **His build file's bytes before the boot EQUAL its bytes after
+   /stop** (one exception, named if it arises: had he NO build file before, a run that changed one leaves a file holding
+   no cell; `PLAN-selftest-restore-builds.md`'s CC'S CALL).
 5. **The world's saved difficulty,** read from the decompressed `level.dat`, before and after the run.
 6. **Config:** `dev-pack-on-join: true`. No `run\rpgfight`.
 7. **"BOOTING NOW", in its own message, BEFORE the boot command**, with: "Ben: do NOT log in until I tell you R0 passed."
@@ -110,29 +112,46 @@ SM7 240; `awk` over the file's `- wait:` lines per row, 2026-11-27); the regen r
 - **P** is a Flint Staff row's press (`use: right_click`); a bolt flies 1.4 blocks a tick (gravity 0.05), so its hit is
   a few ticks after P (not predicted to the tick: the lines carry it).
 
-## THE COORDINATE TABLE (from his stand F, block-centred: x east, z south; every zombie at his y)
+## THE COORDINATE TABLE (x east, z south; every zombie at his y)
 
-| row | body | at | horizontal from the ring's origin | reach tick | its max health |
+**THE SEAT'S D3 (2026-11-27), edited in place before any approval: every row that casts Smolder (SM2 to SM7 and WA3)
+first stands him at G = F + (10, 0), block-centred, facing east** (`execute align xz positioned ~10.5 ~ ~0.5 …`; SM6 had
+no stand step and gained one). The rows' mobs are summoned relative to HIM, so their offsets from G are what they were
+from F, and every distance, tick and health below is unchanged. WA1, WA2 and WA6 cast no ring and stand at F.
+
+| row | body | from his stand | from F | horizontal from the ring's origin | reach tick | max health |
+|---|---|---|---|---|---|---|
+| SM2 | a3, a6, a11, a12 | G + (3, 0), (6, 0), (11.5, 0), (12.5, 0) | (13, 0), (16, 0), (21.5, 0), (22.5, 0) | 3, 6, 11.5, 12.5 | 8, 15, 29, never | 3000 |
+| SM2 | his wolf | G + (0, 4) | (10, 4) | 4 | (refused by the table) | his summon |
+| SM3 | b6 | G + (6, 0) | (16, 0) | 6 | 15 | 3000 |
+| SM4 | c11 | G + (0, -11) | (10, -11) | 11 from G; 13.601 from G + 8 | 28 (pulse 1); never | 3000 |
+| SM4 | c19 | G + (19, 0) | (29, 0) | 19 from G; 11 from G + 8 | never; 28 (pulses 2 to 4) | 3000 |
+| SM4, SM7 | him, moved | G + (8, 0) at C+40 | (18, 0) | | | |
+| SM5 | d6 | G + (6, 0) | (16, 0) | 6 | 15 | 3000 |
+| WA1 | w1 in water; w2 dry | F + (5, -3); (5, 3) | the same | (a bolt each) | | 1000 |
+| WA2 | v, then into the water | F + (5, 3), then (5, -3) | the same | (a bolt) | | 1000 |
+| WA3 | u in water | G + (6, -3) | (16, -3) | 6.708 | 17 | 3000 |
+| WA6 | k1, k1w; k2 in water, k2w; k3, k3w | F + (6, -8), (7.5, -8); (6, 0), (6, 2.5); (6, 8), (7.5, 8) | the same | (bolts; Ignite's 4) | | k1 1000, k2 10, k3 10, witnesses 1000 |
+
+**Every ring against the pad (D3, executed: `SmolderGateArithmeticTest.d3_everyRingFromEveryOriginLiesInsideTheInterior
+AndThePreflight`).** Edges from F: the interior is columns x -2..45, z -13..13 from his block, so **x -2.5 .. 45.5, z
+-13.5 .. 13.5**; the preflight `-2 -12 30 12` is **x -2.5 .. 30.5, z -12.5 .. 12.5**.
+
+| origin (from F) | used by | x reach (origin +/- 12) | z reach | inside the interior | inside the preflight |
 |---|---|---|---|---|---|
-| SM2 | a3, a6, a11, a12 | (3, 0), (6, 0), (11.5, 0), (12.5, 0) | 3, 6, 11.5, 12.5 | 8, 15, 29, never | 3000 |
-| SM2 | his wolf | (0, 4) | 4 | (refused by the table) | his summon |
-| SM3 | b6 | (6, 0) | 6 | 15 | 3000 |
-| SM4 | c11 | (0, -11) | 11 from F; 13.601 from F+8 | 28 (pulse 1); never | 3000 |
-| SM4 | c19 | (19, 0) | 19 from F; 11 from F+8 | never; 28 (pulses 2 to 4) | 3000 |
-| SM4 | him, moved | F+(8, 0) at C+40 | | | |
-| SM5 | d6 | (6, 0) | 6 | 15 | 3000 |
-| WA1 | w1 in water; w2 dry | (5, -3); (5, 3) | (a bolt each) | | 1000 |
-| WA2 | v, then into the water | (5, 3), then (5, -3) | (a bolt) | | 1000 |
-| WA3 | u in water | (6, -3) | 6.708 | 17 | 3000 |
-| WA6 | k1, k1w; k2 in water, k2w; k3, k3w | (6, -8), (7.5, -8); (6, 0), (6, 2.5); (6, 8), (7.5, 8) | (bolts) | | k1 1000, k2 10, k3 10, witnesses 1000 |
+| G = (10, 0) | SM2, SM3, SM5, SM6, WA3, pulse 1 of SM4 and SM7 | -2 .. 22 | -12 .. 12 | yes (-2 >= -2.5) | yes |
+| G + 8 = (18, 0) | pulses 2 to 4 of SM4 and SM7 | 6 .. 30 | -12 .. 12 | yes | yes (30 <= 30.5) |
+
+WA6's Ignite blasts (radius 4) at F + (6, +/-8) and (6, 0) reach x 2 .. 10, z -12 .. 12: inside both. Every staged body
+lies inside the preflight box (the same test).
 
 - **The water cells:** a 3 x 3 glass ring at floor height with water in its centre, saved first (`save_blocks`) and put
   back by the run: WA1 and WA2 at x 4..6, z -4..-2 (water at (5, -3)); WA3 at x 5..7, z -4..-2 (water at (6, -3)); WA6 at
   x 5..7, z -1..1 (water at (6, 0)). Glass holds the water (it does not flow into a solid block) and stops nothing: a
   bolt aimed eye to eye passes above the 1-block ring, and a ring hit asks no line of sight.
-- **Every ring against the pad:** radius 12 from F reaches x -12..12, z -12..12; from F+8, x -4..20. The pad's interior is
-  x -2..45, z -13..13 (`SelfTestPadShape`), and the preflight box is `-2 -12 20 12`. **The ring's DRAWING west of x = -2
-  is outside the pad; no body is staged there**, and the hits are by distance, not by the drawing.
+- **D3, what this said before the seat's read (kept as the record):** "radius 12 from F reaches x -12..12 … The ring's
+  DRAWING west of x = -2 is outside the pad; no body is staged there." **That was the defect, written down and argued
+  with rather than fixed**: the ring's reach left the interior and the preflight. Fixed by G, above.
 - **Health, executed:** `MobScaling.maxHealth(600, false, true, 100)` = 3000; `(200, …)` = 1000; `(2, …)` = 10. The gear
   score of a summoned zombie on the pad reads 100 (`GATE-blast-fungus.md`: max_health 200 read as `1000.000/1000.000`); the
   first PROBE of each row is the reading that holds it.
@@ -196,9 +215,10 @@ each burn **min(5% of 3000 = 150, 80) = 80**, defence bypassed, credited to him.
 
 ### SM4 — THE ORIGIN MOVES, THE RING DOES NOT
 
-- **Pulse 1 `origin=` F; at C+40 he is moved 8 east (`SELF` at F+8); pulses 2, 3, 4 `origin=` F+8.**
-- c11: ONE hit, **`n=1` at C+28 `dist=11.000`**; none from pulses 2 to 4 (13.601 from F+8). c19: **`n=2` at C+88, `n=3`
-  at C+148, `n=4` at C+208, `dist=11.000`**; none from pulse 1 (19 from F).
+- **Pulse 1 `origin=` G (F + 10); at C+40 he is moved 8 east (`SELF` at G + 8 = F + 18); pulses 2, 3, 4 `origin=`
+  G + 8.** (D3 moved both from F and F + 8; nothing else here moved.)
+- c11: ONE hit, **`n=1` at C+28 `dist=11.000`**; none from pulses 2 to 4 (13.601 from G + 8). c19: **`n=2` at C+88,
+  `n=3` at C+148, `n=4` at C+208, `dist=11.000`**; none from pulse 1 (19 from G).
 - Burns: c11 six, C+47 to C+147; c19 twelve, C+107 to C+327; each 80.
 - At C+340: c11 **`2360.000`** (crit: **2200.000**), c19 **`1560.000`** (crit: **1080.000**), executed.
 

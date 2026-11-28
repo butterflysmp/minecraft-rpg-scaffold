@@ -12,7 +12,7 @@
 # (PULSE, IGNITE_SPLASH), EXECUTED there; no row damages him.
 setup:
   - pad: ""
-  - preflight: "-2 -12 20 12"
+  - preflight: "-2 -12 30 12"
   - difficulty: normal
   - trace: on
   - cmd: "time set 18000"
@@ -69,7 +69,7 @@ SM2:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - cmd: "rpg give bone_whistle"
   - wait: 2
@@ -111,7 +111,7 @@ SM3:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -132,7 +132,7 @@ SM4:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -156,7 +156,7 @@ SM5:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -177,6 +177,7 @@ SM6:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"   # D3: G, 10 east, so every ring stays on the pad
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
@@ -272,7 +273,7 @@ WA3:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - save_blocks: "5 0 -4 7 0 -2"
   - cmd: "fill ~5 ~ ~-4 ~7 ~ ~-2 minecraft:glass"
@@ -348,7 +349,7 @@ SM7:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - stone: ""
   - hold: stone
