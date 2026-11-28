@@ -72,6 +72,30 @@ class StatsSheetLinesTest {
         // Mutation: divide by 20 inside perFiveSeconds -> "0.25/5s" -> reddens.
     }
 
+    /**
+     * U1/U4 (the seat, 2026-11-27): THE TOOLTIP FORM OF A REGEN NUMBER. The same conversion (x the window) and the same
+     * suffix as {@link StatsSheetLines#perFiveSeconds}, so a tooltip's number IS the amount the sheet's line moves by.
+     * Whole to the cent prints whole ({@code "10/5s"}); anything else prints the sheet's two decimals ({@code "0.50/5s"}).
+     */
+    @Test
+    void theTooltipFormIsTheSheetsNumberAndSuffix_wholeWhenWhole() {
+        assertEquals("/5s", StatsSheetLines.RATE_SUFFIX);
+        assertEquals("10/5s", StatsSheetLines.perFiveSecondsBonus(2.0), "the golden set's 2 per second");
+        assertEquals("2/5s", StatsSheetLines.perFiveSecondsBonus(2.0 / 5.0), "the leather set's engine 0.4 per second");
+        assertEquals("3/5s", StatsSheetLines.perFiveSecondsBonus(ManaRegen.perSecondFromPerFiveSeconds(3)),
+                "Mana Battery III: the authored 3 through the scan's conversion and back");
+        assertEquals("0.50/5s", StatsSheetLines.perFiveSecondsBonus(0.1), "non-whole keeps the sheet's two decimals");
+        assertEquals("0.25/5s", StatsSheetLines.perFiveSecondsBonus(0.05));
+        assertEquals("1.50/5s", StatsSheetLines.perFiveSecondsBonus(HealthRegen.BASE_PER_SECOND + 0.1),
+                "and the 1.5000000000000002 trap still prints as the sheet prints it");
+        assertEquals("1", StatsSheetLines.perFiveSecondsAmount(0.6 - 0.4),
+                "0.19999999999999996 x 5 is whole to the cent, so whole");
+        // The sheet's own line is untouched: the same numbers there keep two decimals.
+        assertEquals("10.00/5s", StatsSheetLines.perFiveSeconds(2.0));
+        // Mutation: drop the trim -> "10.00/5s" -> reddens. Trim to trimNumber -> "1.5000000000000002/5s" -> reddens.
+        // Mutation: drop the x window -> "2/5s" for the golden set -> reddens.
+    }
+
     // --- Fractions: the two that are NOT what they look like ---------------------------------------
 
     @Test

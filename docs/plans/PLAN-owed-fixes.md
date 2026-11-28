@@ -259,3 +259,28 @@ Each item's as-built account (file, test, mutation) is added under *V7 AS BUILT*
   remove-dev-weapons, sunder, sword-convert, sword-smithing, sword-tiers, unique-enchant-slot, vanilla-bows, wither-status,
   withered-shortbow. Ben is asked not to type them meanwhile.
 - **His summons and fused chunks** are removed at a run's first CLEAN and not put back (P1's known cost).
+
+## DATED NOTE, 2026-11-27 — THE SEAT'S W4, RULED AT THE MERGE OF #333 TO #335, BUILT IN `feat/regen-tooltips-sheet-unit`
+
+**What W4 asks (the seat's, at the merge; restated as its U7 the same day):** `probe_mana`'s line gains `tick=`; an
+accessory equip and an unequip through the menu each write one log line (who, slot, item, tick), pinned by test.
+**Why:** GATE-mana-battery's rows read a refill between two MANA lines and an accessory's effect after a menu click,
+and neither line said which tick it was taken in (the clock rule in `verification.md`: a prediction about ticks names
+its clock and the phase each read is taken in).
+
+**As built:**
+
+- **`MANA current=<c> max=<m> tick=<t>`** (`SelfTestDrivers.manaLine`, the `PROBE_MANA` arm): the server tick
+  (`Bukkit.getCurrentTick()`) in the step the pool is read; last on the line, so every older field reads as before.
+  `SelfTestManaProbeTest` (the line word for word; the arm passes the server tick).
+- **`ACCESSORY menu equip|unequip player=<name> slot=<0-3> item=<accessory id> tick=<t>`** (`EquipmentMenu`, to the
+  server log through `adapters.log()`): one line per gesture, from all three write paths (a cursor equip, a shift-click
+  equip, an unequip by click or shift-click), **written when the accessory store ACCEPTS the write**, which is the
+  click's tick and the moment the stored slot changes. A refused write logs nothing (the player is told, as before).
+  An unequipped item whose id cannot be read logs `item=unreadable`. `EquipmentMenuAccessoryLogTest` (the line word for
+  word; three call sites, each on its accepted branch only; the server log and the server tick).
+- **CC'S CALL:** logged at acceptance, not when the disk write settles (a later tick on another thread's hop). The
+  alternative names the settle tick and would need an `ok=` field; acceptance is when the in-memory slot changes,
+  which is what the reconcile reads.
+- **Not covered, and not asked:** an equip or unequip by `/rpg selftest`'s `accessory:` step (it has its own `STAGE
+  accessory …` line with `tick=`) or by any command; only the menu.

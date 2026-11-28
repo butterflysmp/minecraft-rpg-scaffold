@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.core.progression;
 
+import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +22,10 @@ import java.util.List;
  * PROBABILITY, so the lines convert back -- {@code x 5} and {@code x 100} -- and ROUND, because
  * {@code 0.2 x 5} is not guaranteed to print as {@code 1} in binary floating point. Every value here is a
  * whole number by construction (Ben's steps are whole), so rounding loses nothing.
+ *
+ * <p><b>2026-11-27, the seat's U1: regen is now the stats sheet's</b> {@code StatsSheetLines.perFiveSecondsAmount} and
+ * suffix ({@code "+1 Health Regen/5s"}, was {@code "per 5s"}), so the Level menu and every regen tooltip read in one
+ * unit from one formatter. Its cent rounding plays the part {@code Math.round} played; crit is unchanged.
  */
 public final class LevelBonusLines {
 
@@ -54,12 +60,16 @@ public final class LevelBonusLines {
         List<String> lines = new ArrayList<>();
         long hp = Math.round(maxHealth);
         long damage = Math.round(weaponDamage);
-        long regenPerFive = Math.round(regenPerSecond * 5);
+        // U1 (the seat, 2026-11-27): the sheet's own conversion, formatter and suffix, never a literal 5 here. Whole to
+        // the cent at every level (LevelBonusLinesTest sweeps them), so it prints "+1", as Math.round did.
+        String regenPerFive = StatsSheetLines.perFiveSecondsAmount(regenPerSecond);
         long def = Math.round(defense);
         long critPercent = Math.round(critChance * 100);
         if (hp != 0) lines.add("+" + hp + " Max Health");
         if (damage != 0) lines.add("+" + damage + " Weapon Damage");
-        if (regenPerFive != 0) lines.add("+" + regenPerFive + " Health Regen per 5s");
+        if (!regenPerFive.equals("0")) {
+            lines.add("+" + regenPerFive + " " + StatsSheetLines.HEALTH_REGEN_LABEL + StatsSheetLines.RATE_SUFFIX);
+        }
         if (def != 0) lines.add("+" + def + " Defense");
         if (critPercent != 0) lines.add("+" + critPercent + "% Crit Chance");
         return List.copyOf(lines);

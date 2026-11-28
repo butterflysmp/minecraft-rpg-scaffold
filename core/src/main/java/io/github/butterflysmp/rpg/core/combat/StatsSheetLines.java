@@ -143,7 +143,29 @@ public final class StatsSheetLines {
      * print and what two decimals renders as {@code "1.50"}.
      */
     public static String perFiveSeconds(double perSecond) {
-        return two(perSecond * RATE_WINDOW_SECONDS) + "/" + RATE_WINDOW_SECONDS + "s";
+        return two(perSecond * RATE_WINDOW_SECONDS) + RATE_SUFFIX;
+    }
+
+    /** The sheet's unit, as every regen line prints it: {@code "/5s"}. Built from the window, never typed. */
+    public static final String RATE_SUFFIX = "/" + RATE_WINDOW_SECONDS + "s";
+
+    /**
+     * U1 (the seat, 2026-11-27): <b>EVERY REGEN NUMBER A PLAYER READS ON A TOOLTIP IS IN THE SHEET'S UNIT.</b> A
+     * per-second rate, a bonus, as the amount the sheet's line moves by: the SAME x {@link #RATE_WINDOW_SECONDS} as
+     * {@link #perFiveSeconds} and its two decimals, then whole when it is whole to the cent ({@code 2.0 -> "10"},
+     * {@code 0.1 -> "0.50"}, {@code 0.19999999999999996 -> "1"}). Whole because a tooltip's other bonuses print whole
+     * ({@code "+30"}); two decimals otherwise because that is what the sheet prints and the
+     * {@code 1.5000000000000002} trap above still applies. Takes the ENGINE's per-second value, so the number is what
+     * the engine does, never what was authored.
+     */
+    public static String perFiveSecondsAmount(double perSecond) {
+        String cents = two(perSecond * RATE_WINDOW_SECONDS);
+        return cents.endsWith(".00") ? cents.substring(0, cents.length() - 3) : cents;
+    }
+
+    /** {@link #perFiveSecondsAmount} with the sheet's suffix: {@code 2.0 -> "10/5s"}. */
+    public static String perFiveSecondsBonus(double perSecond) {
+        return perFiveSecondsAmount(perSecond) + RATE_SUFFIX;
     }
 
     /** A composed hit, to two decimals: {@code "14.20"}. */

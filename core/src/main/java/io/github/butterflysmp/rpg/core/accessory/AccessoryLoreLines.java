@@ -46,8 +46,10 @@ public final class AccessoryLoreLines {
             // stats sheet prints every rate over StatsSheetLines.RATE_WINDOW_SECONDS ("0.80/5s"), and
             // an item that said "-0.04/s" beside a total that says "0.80/5s" makes a player do the
             // conversion to check either. One unit, one formatter: the Quiver reads "-0.20/5s".
+            // U1/U4 (the seat, 2026-11-27): the sheet's TOOLTIP form, whole when whole ("+1/5s"), else the sheet's two
+            // decimals. Every shipped accessory regen is non-whole, so every shipped line is unchanged.
             case HEALTH_REGEN, MANA_REGEN ->
-                    sign + StatsSheetLines.perFiveSeconds(Math.abs(amount)) + " " + stat.label();
+                    sign + StatsSheetLines.perFiveSecondsBonus(Math.abs(amount)) + " " + stat.label();
             case CLASS_DAMAGE -> sign + plain(magnitude) + " " + classLabel + " " + stat.label();
             case MAX_HEALTH, MAX_MANA, DEFENSE -> sign + plain(magnitude) + " " + stat.label();
         };

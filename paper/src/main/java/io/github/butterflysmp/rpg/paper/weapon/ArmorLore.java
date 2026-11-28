@@ -86,7 +86,13 @@ public final class ArmorLore {
      * @param label  the stat's name, from {@code ArmorLoreLines}
      * @param color  the stat's HUD colour, from {@code StatsBarText} -- never picked at the call site
      */
-    public record StatBonus(double points, String label, NamedTextColor color) {}
+    public record StatBonus(double points, String label, NamedTextColor color, String shown) {
+
+        /** The usual bonus: its value shown as {@code "+N"} ({@code ArmorLoreLines.bonusValue}). */
+        public StatBonus(double points, String label, NamedTextColor color) {
+            this(points, label, color, io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines.bonusValue(points));
+        }
+    }
 
     /**
      * The same tooltip, showing the EFFECTIVE Defense after this piece's own {@code protectionPoints}
@@ -148,7 +154,7 @@ public final class ArmorLore {
                         StatsBarText.DEFENSE_COLOR)));
 
         for (StatBonus bonus : bonuses) {
-            GearLore.appendFlatBonus(lore, bonus.points(), bonus.label(), bonus.color());
+            GearLore.appendFlatBonus(lore, bonus.points(), bonus.label(), bonus.shown(), bonus.color());
         }
 
         // B8 (2026-11-25): THE SET BONUS, the same on all four pieces of a set and STATIC (a tooltip does not know what

@@ -48,16 +48,21 @@ class AccessoryLoreLinesTest {
     @Test
     void regenPrintsInTheStatsSheetsUnit_throughItsFormatter() {
         for (AccessoryStat rate : new AccessoryStat[] {AccessoryStat.HEALTH_REGEN, AccessoryStat.MANA_REGEN}) {
-            assertEquals("+" + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSeconds(0.1)
+            // U1/U4 (the seat, 2026-11-27): the sheet's TOOLTIP form, perFiveSecondsBonus: the same x5 and suffix,
+            // whole when whole. The shipped accessories are all non-whole, so their lines are byte-identical.
+            assertEquals("+" + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSecondsBonus(0.1)
                             + " " + rate.label(),
                     AccessoryLoreLines.modifier(rate, 0.1, "x"), rate.token());
-            assertEquals("-" + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSeconds(0.04)
+            assertEquals("-" + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSecondsBonus(0.04)
                             + " " + rate.label(),
                     AccessoryLoreLines.modifier(rate, -0.04, "x"), rate.token());
+            assertEquals("+1/5s " + rate.label(), AccessoryLoreLines.modifier(rate, 0.2, "x"),
+                    "a whole amount prints whole, as every regen tooltip does; " + rate.token());
         }
         assertEquals("1.00/5s", io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSeconds(0.2),
-                "control: the formatter is the one the sheet's '1.00/5s' base comes from");
+                "control: the sheet's own line keeps two decimals for the same rate");
         // Mutation: restore the per-second form (sign + plain(magnitude) + "/s ") -> reddens.
+        // Mutation: back to perFiveSeconds -> the whole row reads "+1.00/5s" -> reddens.
     }
 
     @Test

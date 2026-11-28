@@ -12,7 +12,8 @@ flavor:
   - "It buys goodwill from things that cannot spend it."
 
 # THE SET BONUS (B1): all four of this file's pieces worn. FLAT (Ben: "No it's flat").
-# mana_regen is per second (Ben: "this is every second").
+# mana_regen is per second (Ben: "this is every second"). Its TOOLTIP reads in the stats sheet's unit, "+10 Mana Regen/5s"
+# (Ben, 2026-11-27: "The golden set should also"; the seat's U1): the strength is unchanged, 2 per second.
 set_bonus:
   - type: mana_regen
     value: 2                      # BEN 2026-11-25

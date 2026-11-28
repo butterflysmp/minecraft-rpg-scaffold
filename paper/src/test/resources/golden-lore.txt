@@ -418,7 +418,7 @@
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["4" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
-   "+2 Mana Regen per second" color=#AAAAAA O=. B=. S=. U=. I=F
+   "+10 Mana Regen/5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -427,7 +427,7 @@
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
-   "+2 Mana Regen per second" color=#AAAAAA O=. B=. S=. U=. I=F
+   "+10 Mana Regen/5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -436,7 +436,7 @@
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
-   "+2 Mana Regen per second" color=#AAAAAA O=. B=. S=. U=. I=F
+   "+10 Mana Regen/5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -445,7 +445,7 @@
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
-   "+2 Mana Regen per second" color=#AAAAAA O=. B=. S=. U=. I=F
+   "+10 Mana Regen/5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -490,7 +490,7 @@
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["4" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
-   "+2 Health Regen per 5s" color=#AAAAAA O=. B=. S=. U=. I=F
+   "+2 Health Regen/5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -499,7 +499,7 @@
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
-   "+2 Health Regen per 5s" color=#AAAAAA O=. B=. S=. U=. I=F
+   "+2 Health Regen/5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -508,7 +508,7 @@
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
-   "+2 Health Regen per 5s" color=#AAAAAA O=. B=. S=. U=. I=F
+   "+2 Health Regen/5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -517,7 +517,7 @@
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
-   "+2 Health Regen per 5s" color=#AAAAAA O=. B=. S=. U=. I=F
+   "+2 Health Regen/5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F

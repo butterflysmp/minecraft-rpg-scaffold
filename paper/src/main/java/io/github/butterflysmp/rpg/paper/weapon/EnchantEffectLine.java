@@ -185,9 +185,15 @@ public final class EnchantEffectLine {
                 }
                 // Mana Battery (2026-11-27): mana per FIVE SECONDS added to the regeneration rate, the authored number,
                 // which is what the sheet's Mana Regen line moves by (C4). "Mana Regen" is the sheet's word for the stat.
-                // SEAT PLACEHOLDER 2026-11-27 wording; whether to show "/5s" is OPEN FOR BEN.
+                // U1 (the seat, 2026-11-27; Ben: "Yes the mana battery's tooltip should read /5"): the number through
+                // the scan's conversion and contribution and back out through the sheet's formatter, with the sheet's
+                // suffix: "+3 Mana Regen/5s". Wording otherwise SEAT PLACEHOLDER 2026-11-27.
                 double perFiveSeconds = EnchantCurve.valueAt(definition.valueByLevel(), level);
-                yield String.format("+%.0f Mana Regen", perFiveSeconds);
+                yield "+" + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSecondsAmount(
+                        io.github.butterflysmp.rpg.core.combat.ManaRegen.contribution(
+                                io.github.butterflysmp.rpg.core.combat.ManaRegen.perSecondFromPerFiveSeconds(perFiveSeconds)))
+                        + " " + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.MANA_REGEN_LABEL
+                        + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.RATE_SUFFIX;
             }
             case QUIVER_SIZE -> {
                 if (definition.gearClass() != heldClass) {

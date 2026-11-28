@@ -154,7 +154,7 @@ final class SelfTestDrivers {
             case PROBE_MANA -> {
                 var pool = run.resources();
                 run.log(manaLine(pool.current(p.getUniqueId(), ResourceCost.DEFAULT_RESOURCE),
-                        pool.max(p.getUniqueId(), ResourceCost.DEFAULT_RESOURCE)));
+                        pool.max(p.getUniqueId(), ResourceCost.DEFAULT_RESOURCE), Bukkit.getCurrentTick()));
                 yield Optional.empty();
             }
             case PROBE_BODY -> probeBody(p, a);
@@ -1466,8 +1466,8 @@ final class SelfTestDrivers {
         return String.format(Locale.ROOT, "%.3f", v);
     }
 
-    /** {@code probe_mana}'s line (SelfTestManaProbeTest pins it word for word). */
-    static String manaLine(double current, double max) {
-        return "MANA current=" + fmt(current) + " max=" + fmt(max);
+    /** {@code probe_mana}'s line (SelfTestManaProbeTest pins it word for word); W4, 2026-11-27: ends with the server tick. */
+    static String manaLine(double current, double max, int tick) {
+        return "MANA current=" + fmt(current) + " max=" + fmt(max) + " tick=" + tick;
     }
 }

@@ -19,6 +19,7 @@ import io.github.butterflysmp.rpg.storage.PlayerAccessories;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -283,6 +284,8 @@ public final class EquipmentMenu extends Menu {
             }
         })) {
             viewer.setItemOnCursor(taken);
+        } else {
+            logAccessory("equip", index, def.get().id());
         }
         viewer.updateInventory();
     }
@@ -317,6 +320,7 @@ public final class EquipmentMenu extends Menu {
             setSource.accept(taken);                                            // nothing moved
             return false;
         }
+        logAccessory("equip", target, def.get().id());
         scheduleRender();
         return true;
     }
@@ -331,7 +335,7 @@ public final class EquipmentMenu extends Menu {
         // WRITE FIRST, GIVE ONLY ON SUCCESS (§3.9). Residual, recorded in the gate file: a player who
         // disconnects before the success hop runs is not handed the item (the Scheduler drops tasks
         // for a gone entity) -- the vault's accepted "completion lost" residual.
-        write(index, null, ok -> {
+        boolean accepted = write(index, null, ok -> {
             if (!ok) {
                 say("That unequip FAILED to reach disk; the accessory stays equipped.");
                 return;
@@ -343,6 +347,22 @@ public final class EquipmentMenu extends Menu {
             }
             viewer.updateInventory();
         });
+        if (accepted) logAccessory("unequip", index,
+                AccessoryItems.accessoryId(item.get(), adapters.keys()).orElse("unreadable"));
+    }
+
+    /**
+     * W4 (the seat, 2026-11-27): one server-log line per accessory equip or unequip through this menu, written when the
+     * store ACCEPTS the write (this click's tick, the moment the stored slot changes; the disk write settles later). A
+     * refused write logs nothing. {@code EquipmentMenuAccessoryLogTest} pins the line and the three call sites.
+     */
+    private void logAccessory(String verb, int index, String item) {
+        adapters.log().info(accessoryLine(verb, viewer.getName(), index, item, Bukkit.getCurrentTick()));
+    }
+
+    /** {@code ACCESSORY menu equip player=Ben slot=2 item=mending_charm tick=4021}: who, slot, item, tick. */
+    static String accessoryLine(String verb, String player, int slot, String item, int tick) {
+        return "ACCESSORY menu " + verb + " player=" + player + " slot=" + slot + " item=" + item + " tick=" + tick;
     }
 
     private boolean write(int index, String encoded, Consumer<Boolean> onSettledOnOwnThread) {

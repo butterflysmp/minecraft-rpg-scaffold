@@ -176,8 +176,10 @@ public final class ArmorItems {
         addBonus(bonuses, state, enchants, EnchantEffect.MAX_MANA,
                 ArmorLoreLines.MAX_MANA_LABEL, StatsBarText.MANA_COLOR);
         // Mana Battery (the seat's B5, 2026-11-27): one line as Mana Bank's, by the same helper, keyed on the effect.
-        addBonus(bonuses, state, enchants, EnchantEffect.MANA_REGEN,
-                ArmorLoreLines.MANA_REGEN_LABEL, StatsBarText.MANA_COLOR);
+        // U1 (2026-11-27; Ben: "Yes the mana battery's tooltip should read /5"): its value in the sheet's unit, "+3/5s".
+        double battery = EnchantValues.totalFor(state, enchants, EnchantEffect.MANA_REGEN);
+        if (battery > 0) bonuses.add(new ArmorLore.StatBonus(battery, ArmorLoreLines.MANA_REGEN_LABEL,
+                StatsBarText.MANA_COLOR, ArmorLoreLines.manaBatteryValue(battery)));
         return ArmorLore.build(armor, EnchantValues.totalFor(state, enchants, EnchantEffect.DEFENSE), bonuses, score);
     }
 

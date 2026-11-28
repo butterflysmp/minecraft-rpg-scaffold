@@ -122,9 +122,17 @@ public final class GearLore {
      */
     public static void appendFlatBonus(List<Component> lore, double points, String label,
                                        NamedTextColor color) {
+        appendFlatBonus(lore, points, label, ArmorLoreLines.bonusValue(points), color);
+    }
+
+    /**
+     * The same line with its value already rendered: Mana Battery's {@code "+3/5s"}, which is in the stats sheet's unit
+     * rather than the bare {@code "+N"} (the seat's U1, 2026-11-27). Same gate, same colours, same separator.
+     */
+    public static void appendFlatBonus(List<Component> lore, double points, String label, String shown,
+                                       NamedTextColor color) {
         if (points <= 0) return;
-        lore.add(plain(label + ": ", NamedTextColor.GRAY)
-                .append(plain(ArmorLoreLines.bonusValue(points), color)));
+        lore.add(plain(label + ": ", NamedTextColor.GRAY).append(plain(shown, color)));
     }
 
     /**
