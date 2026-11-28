@@ -161,3 +161,6 @@ gates:
 # out Scorch (Y1-Y7, E1-E4), typed LAST as /rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder.
 # docs/gates/GATE-smolder.md.
   - smolder
+# solar-flare (2026-11-27, feat/smolder-gate moved onto feat/solar-flare): Solar Flare (F1-F14), typed LAST as
+# /rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder+solar-flare. docs/gates/GATE-solar-flare.md.
+  - solar-flare

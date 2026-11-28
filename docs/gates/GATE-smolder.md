@@ -12,6 +12,12 @@ figure is EXECUTED by `SmolderGateArithmeticTest` (S-1); the queue, the lint, th
 
 ## WHAT BEN TYPES — ONE COMMAND
 
+> **SUPERSEDED, 2026-11-27 (before any boot), by Solar Flare (#340) joining the stack:** Ben types the ONE command in
+> `GATE-solar-flare.md`, `/rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder+solar-flare`, which runs this gate's
+> rows unchanged and then that gate's; SM7 is then the first of two questions, not the last. **That gate's R0 and
+> CARRIED STATE are the boot's**, and they supersede this gate's two sections below (kept as written, for the record).
+> Nothing else here moves.
+
 ```
 /rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder
 ```
