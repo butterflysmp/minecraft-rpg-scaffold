@@ -453,15 +453,45 @@ public final class CastExecutor {
         if (spec.pulse() != null) world.present(origin, spec.pulse());
         ringPass(ability, caster, spec, run.label(), n, origin, 0, Set.of());
         if (n >= spec.count()) return;
-        // WHEN (Z1): the next pulse is due at castTick + n x interval (PulseFront.pulseTick), counted from THIS tick, so a
-        // pulse that ran a tick late does not push the rest late with it. Never less than the scheduler's one tick.
-        int delay = (int) Math.max(1,
-                io.github.butterflysmp.rpg.core.combat.PulseFront.pulseTick(castTick, n + 1, spec.intervalTicks())
-                        - world.currentTick());
-        long handle = world.scheduleOnCancellable(caster.id(), origin, delay, () ->
+        // WHEN (Z1): the next pulse is due at castTick + n x interval (PulseFront.pulseTick), on the server's tick, so a
+        // pulse that ran a tick late does not push the rest late with it. Booked through the settle hop (X6 (a)).
+        long due = io.github.butterflysmp.rpg.core.combat.PulseFront.pulseTick(castTick, n + 1, spec.intervalTicks());
+        bookOnCaster(caster.id(), origin, run, due, () ->
                 world.combatant(caster.id()).ifPresent(c ->
                         firePulse(ability, caster, spec, run, castTick, n + 1, c.state().position())));
-        if (handle >= 0) runs.pending(run, handle);
+    }
+
+    /**
+     * BOOK {@code task} ON THE CASTER FOR SERVER TICK {@code due}, EXACTLY, WHICHEVER PHASE THIS IS CALLED FROM (X6 (a),
+     * 2026-11-27; CC'S CALL, the alternative below). Every link is a pending link of {@code run}, so its removal path
+     * (death, quit, world change, stop, the selftest's clear, a replacing cast) cancels whichever is waiting.
+     *
+     * <p><b>WHY A SETTLE HOP, READ by javap on the pinned 26.1.2 server.</b> A cast reaches this executor through
+     * {@code onRegion}, which on Paper is the GLOBAL region scheduler ({@code FallbackRegionScheduler.execute}), and
+     * {@code MinecraftServer.tickChildren} runs the global scheduler's tick BEFORE every {@code EntityScheduler
+     * .executeTick}. {@code EntityScheduler.schedule} keys a task at {@code tickCount + max(1, delay)} and
+     * {@code executeTick} increments {@code tickCount} BEFORE it looks, so a delay booked from the global phase of tick
+     * T, before the caster's own entity tick in T, runs at {@code T + delay - 1}: the boot of {@code 01be9d3b} read pulse
+     * 2 at C+59 on every row, while pulses 3 and 4, booked from inside an entity tick, landed exactly. So the delay is
+     * computed HERE ONLY AFTER a one-tick hop onto the caster: that hop runs in an entity phase (later in T itself when
+     * booked from the global phase, at T + 1 when booked from an entity phase), where a delay counts exactly, and from
+     * there {@code due - now} is right in both cases.
+     *
+     * <p><b>The alternative</b> was to subtract one when called from the cast's phase: it encodes Paper's phase order as
+     * a constant in core, and is wrong the day a cast is run from an entity phase. The hop reads the clock where the
+     * delay is counted instead. Its one cost: a due tick less than two ticks ahead of an entity-phase caller lands one
+     * late (no authored interval is under 10).
+     */
+    private void bookOnCaster(UUID casterId, Vec3 lastKnown, io.github.butterflysmp.rpg.core.combat.PulseRuns.Run run,
+                              long due, Runnable task) {
+        var runs = world.pulseRuns();
+        // No "is the run current" check in the hop: every removal cancels the pending link first (firePulse's own note).
+        long settle = world.scheduleOnCancellable(casterId, lastKnown, 1, () -> {
+            int delay = (int) Math.max(1, due - world.currentTick());
+            long handle = world.scheduleOnCancellable(casterId, lastKnown, delay, task);
+            if (handle >= 0) runs.pending(run, handle);
+        });
+        if (settle >= 0) runs.pending(run, settle);
     }
 
     /**

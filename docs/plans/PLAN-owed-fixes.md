@@ -284,3 +284,94 @@ its clock and the phase each read is taken in).
   which is what the reconcile reads.
 - **Not covered, and not asked:** an equip or unequip by `/rpg selftest`'s `accessory:` step (it has its own `STAGE
   accessory …` line with `tick=`) or by any command; only the menu.
+
+## DATED NOTE, 2026-11-27 — THE SEAT'S X6, OWED FROM THE BOOT OF `01be9d3b` (GATE-smolder AND GATE-solar-flare READINGS)
+
+Ruled at the merge of #336 to #341 (master `88858c40`), and restated in the seat's brief of the same day ("BEN'S CHANGES
+TO BOTH ULTIMATES … AND THE OWED ITEMS X6", via Ben), PART 3. Recorded here as this stack's first commit; each item's
+as-built account is added under *X6 AS BUILT*, below, by the branch that builds it. The ruled form, in the brief's words:
+
+> (a) THE CLOCK ACCOUNT: by javap and one instrumented read, which clock each trace line prints, where a cast sits in the
+> tick, why a pulse scheduled from the cast landed at C+59 while pulses scheduled from a pulse landed on 60, and why the
+> first burn is hit+20; correct PLAN-smolder.md's clock section by a dated note saying how the earlier READ went wrong.
+> Then make the intervals EXACT on one named clock (pulse 2 at C+30 now, shot 2 at C+10) if that is a scheduling
+> off-by-one of ours; if it is the server's phase and cannot be made exact without a hack, say so and predict what will
+> be read. Report which.
+> (b) HIS VIEW IS SET BEFORE EVERY ACT THAT READS IT: one tick before every cast, use and look-reading command in a pad
+> gate, a step sets his yaw and pitch (or aims at a tag); for Solar Flare, before EACH of the three shots; the DRIVE line
+> (or the shot line) prints the yaw and pitch fired on; a lint rule refuses a cast or a look-reading command with no
+> view-setting step in the two ticks before it. Each ask row's tell line asks him to keep his mouse still.
+> (c) THE RE-READ ROWS, re-predicted from executed figures on the corrected clock: WA6's clause 1 (the scorched dry body
+> killed by a non-fire hit ignites), SM5, SM6's and SF7's mana with the regen term named.
+> (d) STILL OWED, not built here unless small: rain (a weather field in the snapshot), the splash bottle, his death ending
+> pulses and shots. Say which you did.
+
+**Why (the readings):** every casting row read pulse 2 at C+59 and every burn at hit+20 (`GATE-smolder.md`, READINGS);
+SF4's shots met the floor at Ben's own pitch and WA6's `rpg mobdamage` replied "Look at a mob." (no view was set); SM6's
+mana read `20.100`, not `20.000` (regeneration, unnamed in the prediction).
+
+## X6 AS BUILT
+
+### (a) THE CLOCK (`feat/x6-clock`): IT WAS A SCHEDULING OFF-BY-ONE OF OURS, AND THE INTERVALS ARE NOW EXACT
+
+**ONE CLOCK, READ.** Every line the gates read prints `Bukkit.getCurrentTick()`: the pulse lines through
+`PaperCombatWorld.currentTick`, `DOTTICK` and the SCORCH lines in `DotStatus`, the selftest's `MANA`/`STAGE` lines in
+`SelfTestDrivers`. `CraftServer.getCurrentTick` is `getstatic MinecraftServer.currentTick`, which `runServer`
+increments (`iadd`, `putstatic`) BEFORE each `tickServer`, so it is the same number in every phase of one tick (javap,
+`run/versions/26.1.2/paper-26.1.2.jar`). No line prints the game time or a scheduler's own counter.
+
+**WHERE A CAST SITS, READ.** `StoneCaster.cast` decides at the press P (cooldown, mana, aim, snapshot) and `run` hands the
+effects to `onRegion`, which on Paper is `FallbackRegionScheduler.execute` → `GlobalRegionScheduler.execute`: the next
+tick's GLOBAL phase. So the cast line reads **C = P + 1**. The selftest's step lines (P) reading one less than the cast
+line is this hop, not a second clock.
+
+**THE PHASES, READ (`MinecraftServer.tickChildren`, in order):** `CraftScheduler.mainThreadHeartbeat`, then
+`FoliaGlobalRegionScheduler.tick`, then `EntityScheduler.executeTick` for each entity, then the levels.
+`EntityScheduler.schedule` keys a task at `tickCount + max(1, delay)` (offsets 42 to 55) and `executeTick` increments
+`tickCount` (offsets 42 to 49) BEFORE it removes the due list (offsets 94 to 105). `FoliaEntityScheduler.run` is
+`runDelayed(…, 1)`. `FoliaGlobalRegionScheduler.tick` increments its own `tickCount` first too.
+
+- **So an entity delay booked from the GLOBAL phase of tick T runs at T + delay − 1** (the entity's counter has not moved
+  in T yet), and **booked from an ENTITY phase runs at T + delay**.
+- **Pulse 2 at C+59:** booked by pulse 1, which runs inline in the cast, in the global phase.
+- **Pulses 3 and 4 exact:** booked by pulses 2 and 3, which run inside the caster's `executeTick`.
+- **The first burn at hit + 20:** the ring's hit is a global-phase task; `BukkitCombatant`'s damage hops `onEntity` (a
+  delay of 1 from the global phase: later in the SAME tick, the entity phase), accrues Scorch there and starts the
+  `RepeatingTask`, whose first `scheduleTick(20)` is booked from the entity phase: exactly 20.
+- **A later hit and a burn on one tick: the hit's LINE first, its Scorch REFRESH after the burn.** The line is written in
+  the global phase; the refresh runs in the mob's entity phase, AFTER the burn already due there: `EntityScheduler`'s
+  due list is an `ArrayList` (`lambda$schedule$0`) run in insertion order (`executeTick` offsets 121 to 161), and the
+  burn was booked 20 ticks before the refresh. (CORRECTED 2026-11-28 on this branch before any push: this bullet first
+  read "the hit first", from the log order alone; a model built on it gave SM2 14 burns where the boot read 15, and the
+  due list's READ settled it. `ScorchBurnsReadOrder`, `feat/smolder-spiral`, reproduces both SM2's 15 and SM5's 8.)
+
+**THE INSTRUMENTED READ** is the boot of `01be9d3b`'s own log (`run/logs/latest.log`, `[Rpg] Build: 01be9d3b`): SM2's
+`MANA … 20.000 tick=6110` then `SMOLDER cast … tick=6111` (P, then C = P + 1); pulses at 6111, 6170, 6231, 6291 (C,
++59, +120, +180); `hit n=1 … tick=6119` then `DOTTICK … tick=6139` (+20); at 6239 the `hit n=3` line logged BEFORE the
+`DOTTICK` (global before entity). **No new boot was taken (the brief: DO NOT BOOT).** And the fake now reproduces it:
+`FakeWorld.serverPhases` (opt-in) models the two phases as READ, and
+`PulseCastTest.theFakesPhasesReproduceTheBootsCPlus59AndAnEntityPhaseBookingIsExact` reads 66 for a delay of 60
+booked from the global phase at 7, and exactly 60 from an entity phase.
+
+**WHICH: OURS, NOT A HACK.** The fix is where the delay is counted: `CastExecutor.bookOnCaster` books a one-tick SETTLE
+hop onto the caster and computes `due − now` inside it, in an entity phase, where a delay is exact; from the global
+phase the hop runs later in T itself, from an entity phase at T + 1, and `due − now` is right in both. **CC'S CALL**;
+the alternative (subtract one when called from the cast) puts Paper's phase order into core as a constant and is wrong
+the day a cast runs from an entity phase. Both links are pending links of the run, so every removal cancels whichever
+waits. **Its one cost:** a due tick under two ticks ahead of an entity-phase caller lands one late; no authored interval
+is under 10. Solar Flare's shots use the same booking (`feat/solar-flare-volley`).
+
+**WHAT THE NEXT BOOT WILL READ (on the one clock):** pulse n at **C + interval x (n − 1)** exactly; a ring hit at its
+pulse's tick + the reach tick; the first burn at **hit + 20**, then every 20; on a shared tick the hit's line before the `DOTTICK`, and the burn counted against the window BEFORE the hit's refresh.
+
+**Tests and mutations (core: `./mvnw -pl core test`, Tests run 2766, Failures 0, Errors 0, Skipped 1, on this commit's tree):** three `PulseCastTest` rows (the
+control above; `onTheServersPhasesEveryPulseLandsOnTheCastTickPlusWholeIntervals`, which read `[7, 66, 127, 187]` RED
+before the fix; `aRunEndedBeforeItsSettleHopRunsFiresNothingMore`). Every older pulse row is unchanged and green (phases
+off). Each mutation by a literal splice, marker 1 and original 0, delta 1 against a scratchpad copy, restored
+byte-identical (`cmp`), markers left 0:
+
+| mutation | the change | red |
+|---|---|---|
+| MUTSETTLE | the next pulse booked straight from the caller's phase | `onTheServersPhases…` |
+| MUTSETTLEHANDLE | the settle hop's handle not held by the run | `aRunEndedBeforeItsSettleHop…` |
+| MUTWAITHANDLE | the waiting link's handle not held by the run | `aSecondCastReplaces…`, `endingTheRunBetweenPulsesTwoAndThree…` |
