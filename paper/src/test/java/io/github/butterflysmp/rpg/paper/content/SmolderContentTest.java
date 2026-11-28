@@ -124,6 +124,7 @@ class SmolderContentTest {
             for (var p : particles) {
                 assertEquals(org.bukkit.Particle.TRAIL, p.particle(), id);
                 assertTrue(p.trail().durationTicks() <= 10, id + " lives " + p.trail().durationTicks() + " ticks");
+                assertTrue(p.longDistance(), id + ": long-distance (the seat's Q1: sent and drawn past 32)");
             }
         }
     }

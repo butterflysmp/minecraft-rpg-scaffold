@@ -1,41 +1,48 @@
 # SOLAR FLARE, THE FIRE RANGER'S ULTIMATE (Ben, 2026-11-27; the seat's Solar Flare brief F1 to F14, the same day).
 # Replaces ultimate_placeholder_ranger, which is deleted (ranger_fire.yml names this as its ultimate and its default).
 #
-# BEN'S WORDS, VERBATIM: "It fires 3 giant fireballs in an arc that travel straight for about 15 blocks. Each fireball
-# deals 250 damage and explodes in a 6 block range either when it hits something or at the end of its range". Then:
-# "1. Correct, 30 degrees 2. That is the explosion damage, the whole area takes that damage. 3. Yes it takes all the
-# damage. ... 5. .8 seconds 6. Yes 7. Yes 8. Yes, with one change: when the fireballs explode, I want them to use the
-# same particles that the smolder pulses do." And: "1. 80 mana and 3.5 minutes 2. The same expanding ring. Can we do the
-# damage is dealt when when the ring gets to the target".
+# BEN'S WORDS, VERBATIM, 2026-11-27: "It fires 3 giant fireballs in an arc that travel straight for about 15 blocks.
+# Each fireball deals 250 damage and explodes in a 6 block range either when it hits something or at the end of its
+# range". "2. That is the explosion damage, the whole area takes that damage. 3. Yes it takes all the damage." "1. 80
+# mana and 3.5 minutes".
 #
-# THE FAN (F1): the engine's own spread. count 3 at angle_degrees 30 is one shot down the aim and two in a ring 30
-# degrees off it, at the shooter's right and left in his view plane (SpreadPattern: phi 0 and 180): -30, 0, +30. The
-# shots are numbered LEFT TO RIGHT, n=1 at -30 (CC'S CALL).
+# CHANGED, BEN, 2026-11-28 (relayed by the seat, N1 to N7): "3. The Ranger Ultimate, instead of a fan of three fireballs,
+# I want 3 fireballs one after another. 4. Increase the Fireball speed they're too slow, Increase the range to 32 blocks.
+# 5. I want to change the particles to a firework-style explosion." Asked: "2. .5 seconds 3. 0.8 seconds for the 32
+# blocks 4. yes 5. Instant, I'd like to mention I don't want a firework, I want a fireball that explodes like a
+# firework".
 #
-# THE FLIGHT (F1): straight (gravity 0.0), 15 blocks in 16 ticks: speed 15/16 = 0.9375 a tick and max_lifetime_ticks 16.
-# READ, ProjectileFlight.step: the step at elapsed e traces from launch + e x speed to launch + (e + 1) x speed on the
-# cast's tick + e (the first inline on the cast's frame), and the flight ends at elapsed 15 having reached
-# launch + 16 x 0.9375 = 15.0 blocks, on the cast's tick + 15: the sixteenth tick, counting the cast's. The launch point
-# is his eye (the aim's origin).
+# ONE AFTER ANOTHER (N1): `salvo:` below, three shots 10 ticks apart, launched on the cast's tick and 0.5 and 1 second
+# after it, exact on the server's tick (X6 (a)). Each flies straight down HIS AIM AT THE MOMENT IT LEAVES (Ben: "yes"),
+# from his eye at that tick: shot 1 the cast's aim, shots 2 and 3 his aim read on his own thread on their own ticks. Mana
+# and the cooldown are taken ONCE, at the cast; the crit is rolled once, at the cast, for all three. Numbered 1 to 3 in
+# launch order. NOT the engine's volley (READ: it re-rolls the crit per shot and its shots are no run's to end): the
+# pulses' own scheduling, inside the burst's run, so his death, quit, world change, the stop, the selftest's clear and
+# the pad's clean end the shots still to come.
 #
-# WHAT STOPS IT (F2): the projectile's own trace (PaperCombatWorld.castRay, READ): the first live body or solid block on
-# the step's segment. Fluids and passable blocks (grass, flowers) do not stop it; the caster never; a summon never (the
-# sides table passes it). EVERY other living body does, a passive animal or another player included: OPEN FOR BEN.
+# THE FLIGHT (N2): straight (gravity 0.0), 32 blocks in 0.8 seconds: speed 2.0 a tick, max_lifetime_ticks 16. READ,
+# ProjectileFlight.step: the step at elapsed e traces from launch + 2e to launch + 2(e + 1) on the launch tick + e (the
+# first inline), and the flight ends at launch + 32.0 on the launch tick + 15. Each step is ONE trace of its whole 2-block
+# segment (READ, PaperCombatWorld.castRay -> CraftWorld.rayTrace: ServerLevel.clip over the segment for blocks, a ray
+# against each body's box along the segment for bodies), so a step cannot pass through a thin wall or a body.
 #
-# THE EXPLOSION (F3, F4, F5): ONE pulse front where the shot stopped -- Smolder's own ring code, radius 6, at the speed Smolder's ring had until 2026-11-28
-# (12 blocks in 30 ticks, so 6 in 15: travel_ticks 15, SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN). Each body is struck
-# once by each ring, on the tick the ring reaches its horizontal distance from that ring's fixed origin; three rings, so
-# a body inside two or three takes 250 from each. The origin: on a MOB, the struck mob's own position (its feet), so its
-# ring strikes it at distance 0 and nothing else from that shot does (a direct hit adds nothing); on a BLOCK, the point
+# WHAT STOPS IT (F2, unchanged): the first live body or solid block on a step. Fluids and passable blocks do not stop it;
+# the caster never; a summon never (the sides table passes it). EVERY other living body does, a passive animal or another
+# player included: OPEN FOR BEN.
+#
+# THE BURST (N3): INSTANT. ONE pulse front where the shot stopped with travel_ticks 0: every hostile within 6 blocks
+# (horizontal, in the burst's box) is struck on the burst's own tick, 250 FIRE damage each, one struck set per burst. So
+# three bursts in one place give a body 250 three times (Ben, 2026-11-27: "Yes it takes all the damage"); the 250 is
+# unchanged (Ben was not asked to change it). The origin: on a MOB, the struck mob's own position; on a BLOCK, the point
 # the trace met it; at the END OF RANGE, the end of the last step.
 #
-# THE LOOK (F9): each fireball is a fire charge drawn at scale 2.5 (a display entity, SEAT PLACEHOLDER), with a flame
-# trail (SEAT PLACEHOLDER) and a launch sound (solar_flare_cast, SEAT PLACEHOLDER). THE RING AND THE BURST ARE THIS
-# ULTIMATE'S OWN FILES (the seat's N5, 2026-11-28, replacing F10's shared files): solar_flare_ring and solar_flare_burst.
+# THE LOOK (N4, F9): the body stays the fireball (a fire charge at scale 2.5, SEAT PLACEHOLDER) with its flame trail and
+# its launch sound (SEAT PLACEHOLDERS). "A fireball that explodes like a firework": ROUTE B, built from particles and
+# sounds, with NO firework entity (solar_flare_burst.yml says what it draws and why not a real firework).
 #
-# SCORCH: by the element, as Smolder's (no status step here): each ring's 250 is FIRE damage, so its burn's cap is half
-# the hit as declared, 125 for an uncrit 250 (a crit does not raise it), window 120, restarted by each hit. Ignite and
-# the water rule apply as to every fire hit.
+# SCORCH: by the element (no status step here): each burst's 250 is FIRE damage, so its burn's cap is half the hit as
+# declared, 125 for an uncrit 250 (a crit does not raise it), window 120, restarted by each hit. Ignite and the water rule
+# apply as to every fire hit.
 #
 # WHO IT HITS (Ben: "7. Yes", hostile mobs only, no players, no summons, as Smolder): the sides table,
 # MobHostility.PvpPath.PULSE (spared), and PLAYER -> SUMMON's "no". Never the caster.
@@ -47,10 +54,10 @@ display_name: "<gold>Solar Flare</gold>"
 element: fire
 cooldown_ticks: 4200
 
-# THE BUILD MENU'S PROSE (F12): SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN. Every number in it is this file's own, and
+# THE BUILD MENU'S PROSE (F12, N7): SEAT PLACEHOLDER 2026-11-28, OPEN FOR BEN. Every number in it is this file's own, and
 # SolarFlareContentTest holds each sentence to the number it states.
 description:
-  - "Fire three great fireballs in a fan."
+  - "Fire three great fireballs, one after another."
   - "Each bursts within 6 blocks for 250 fire damage and scorches."
 
 cost:
@@ -59,24 +66,23 @@ cost:
 
 on_cast:
   - type: visual
-    visual_id: solar_flare_cast   # the launch sound, at his eye (SEAT PLACEHOLDER)
+    visual_id: solar_flare_cast   # the launch sound, at his eye, on the cast (SEAT PLACEHOLDER)
 
 cast:
   type: projectile
-  speed: 0.9375
+  speed: 2.0
   gravity: 0.0
   max_lifetime_ticks: 16
   trail: solar_flare_trail        # SEAT PLACEHOLDER
   item: fire_charge               # SEAT PLACEHOLDER
   body_scale: 2.5                 # SEAT PLACEHOLDER
-  spread:
+  salvo:
     count: 3
-    angle_degrees: 30
+    interval_ticks: 10            # Ben: ".5 seconds"
   burst:
     radius: 6.0
-    travel_ticks: 15              # Smolder's old speed, 12 in 30 (F4, SEAT PLACEHOLDER)
-    ring: solar_flare_ring        # its own (N5)
-    pulse: solar_flare_burst      # its own burst and sound (N5)
+    travel_ticks: 0               # instant (N3)
+    pulse: solar_flare_burst      # its own firework burst and sound (N4, N5)
 
 on_hit:
   - type: damage

@@ -47,7 +47,21 @@ public sealed interface VisualSpec permits VisualSpec.Particles, VisualSpec.Soun
      * choice for a new numeric field, would silently restyle every one of them. Do not "tidy" it.
      */
     record Particles(Particle particle, int count, double spread, double speed,
-                     Particle.DustOptions dust, double samplesPerBlock, Trail trail) implements VisualSpec {
+                     Particle.DustOptions dust, double samplesPerBlock, Trail trail, boolean longDistance)
+            implements VisualSpec {
+
+        /**
+         * LONG DISTANCE (the seat's Q1, 2026-11-28): passed as {@code spawnParticle}'s {@code force}. READ, javap on the
+         * pinned server: {@code ServerLevel.sendParticles} sends to a player only when his block's centre is closer than 32.0
+         * to the particle (512.0 with force), and force becomes the packet's {@code overrideLimiter}; READ, Ben's client:
+         * {@code ClientLevel.doAddParticle} draws an override particle with no distance or setting check, and drops any
+         * other beyond 32 from the camera (all on MINIMAL particles, one in three on DECREASED). A Solar Flare burst 32 out
+         * is otherwise never sent. False for every step that does not declare it.
+         */
+        public Particles(Particle particle, int count, double spread, double speed, Particle.DustOptions dust,
+                         double samplesPerBlock, Trail trail) {
+            this(particle, count, spread, speed, dust, samplesPerBlock, trail, false);
+        }
 
         /**
          * A TRAIL particle's data (Smolder's spiral, M3, 2026-11-28): its colour and how many ticks it lives, which the
@@ -56,17 +70,39 @@ public sealed interface VisualSpec permits VisualSpec.Particles, VisualSpec.Soun
          * The particle eases toward a target over its life; the presenter makes the target the very point it is drawn
          * at, so it stays where it is drawn. Null for every particle that is not TRAIL.
          */
-        public record Trail(org.bukkit.Color color, int durationTicks) {}
+        public record Trail(org.bukkit.Color color, int durationTicks, double burstRadius) {
+            /** A still trail (Smolder's spiral): no burst. */
+            public Trail(org.bukkit.Color color, int durationTicks) {
+                this(color, durationTicks, 0.0);
+            }
+        }
 
         /** Every particle step before TRAIL (2026-11-28): no trail data. THE NEW FIELD WENT ON THE END. */
         public Particles(Particle particle, int count, double spread, double speed,
                          Particle.DustOptions dust, double samplesPerBlock) {
-            this(particle, count, spread, speed, dust, samplesPerBlock, null);
+            this(particle, count, spread, speed, dust, samplesPerBlock, null, false);
         }
 
         /** The data object {@code spawnParticle} takes for this step drawn AT {@code at}: the trail's, the dust's, or none. */
         public Object dataAt(org.bukkit.Location at) {
             return trail != null ? new Particle.Trail(at, trail.color(), trail.durationTicks()) : dust;
+        }
+
+        /**
+         * A TRAIL BURST (Solar Flare's firework, the seat's N4, Route B, 2026-11-28): with {@code burst_radius} above 0,
+         * each of the step's {@code count} particles starts at the drawn point and is aimed at one point of a sphere of
+         * that radius about it ({@code core.shape.SphereDirections}). READ, the client's {@code TrailParticle.tick}: each
+         * tick it moves {@code 1 / (lifetime - age)} of the way to its target, so it travels a straight line at a steady
+         * speed and reaches the sphere on its last tick, then is gone: a ball that grows to the radius in
+         * {@code duration_ticks}. Empty for every other step (a still trail is drawn by {@link #dataAt}).
+         */
+        public java.util.List<org.bukkit.Location> burstTargets(org.bukkit.Location at) {
+            if (trail == null || !(trail.burstRadius() > 0)) return java.util.List.of();
+            java.util.List<org.bukkit.Location> out = new java.util.ArrayList<>(count);
+            for (var d : io.github.butterflysmp.rpg.core.shape.SphereDirections.fibonacci(count)) {
+                out.add(at.clone().add(d.x() * trail.burstRadius(), d.y() * trail.burstRadius(), d.z() * trail.burstRadius()));
+            }
+            return out;
         }
     }
 

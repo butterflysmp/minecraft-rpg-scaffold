@@ -797,6 +797,7 @@ public final class CastExecutor {
      */
     private void launchBursting(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
         String label = ability.id().toUpperCase(java.util.Locale.ROOT);
+        var salvo = spec.salvo();
         java.util.List<Vec3> directions = new java.util.ArrayList<>(spec.spread() == null
                 ? java.util.List.of(aim.direction())
                 : SpreadPattern.directionsFor(aim.direction(), aim.right(), spec.spread()));
@@ -805,36 +806,63 @@ public final class CastExecutor {
 
         world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.cast(label, caster.id()));
         var runs = world.pulseRuns();
-        var started = runs.start(caster.id(), label, directions.size());
+        var started = runs.start(caster.id(), label, salvo != null ? salvo.count() : directions.size());
         started.replaced().ifPresent(old -> {
             if (old.pendingHandle() >= 0) world.cancelScheduled(old.pendingHandle());
             world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.cancelled(
                     old.run().label(), caster.id(), old.remaining(), "replaced"));
         });
         var run = started.run();
+        if (salvo != null) {
+            salvoShot(ability, caster, spec, run, world.currentTick(), 1, aim);
+            return;
+        }
+        for (int i = 0; i < directions.size(); i++) {
+            fireBursting(ability, caster, spec, run, i + 1, aim.origin(), directions.get(i).normalize());
+        }
+    }
+
+    /**
+     * SALVO SHOT {@code n} (Solar Flare, the seat's N1, 2026-11-28): fired now, straight down {@code aim} (shot 1: the
+     * cast's own aim; each later shot: the aim read on his own thread on its own tick, Ben's "yes" to "each fireball
+     * follows his aim at the moment it leaves"), then the next booked for {@code castTick + n x interval} on the server's
+     * tick through the pulses' own scheduling ({@link #bookOnCaster}), a pending link of the run, so his death, quit,
+     * world change, the stop, the selftest's clear and the pad's clean end the shots still to come. Numbered 1 to N in
+     * launch order. The caster is the cast's, frozen: one crit for every shot. A caster with no aim on a later shot's tick
+     * (he is gone) fires nothing more; his removal ends the run.
+     */
+    private void salvoShot(AbilityDefinition ability, Caster caster, CastSpec.Projectile spec,
+                           io.github.butterflysmp.rpg.core.combat.PulseRuns.Run run, long castTick, int n, Aim aim) {
+        var salvo = spec.salvo();
+        fireBursting(ability, caster, spec, run, n, aim.origin(), aim.direction().normalize());
+        if (n >= salvo.count()) return;
+        bookOnCaster(caster.id(), aim.origin(), run, castTick + (long) n * salvo.intervalTicks(), () ->
+                world.aimOf(caster.id()).ifPresent(next -> salvoShot(ability, caster, spec, run, castTick, n + 1, next)));
+    }
+
+    /** One bursting shot: its line, its body and its flight down {@code direction} from {@code origin}, and its burst. */
+    private void fireBursting(AbilityDefinition ability, Caster caster, CastSpec.Projectile spec,
+                              io.github.butterflysmp.rpg.core.combat.PulseRuns.Run run, int n, Vec3 origin, Vec3 direction) {
+        var runs = world.pulseRuns();
         var look = new io.github.butterflysmp.rpg.core.combat.ProjectileFlight.Look(
                 spec.trail(), spec.item(), spec.body(), spec.bodyScale());
-        for (int i = 0; i < directions.size(); i++) {
-            int n = i + 1;
-            Vec3 direction = directions.get(i).normalize();
-            world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.shot(label, caster.id(), n, direction));
-            io.github.butterflysmp.rpg.core.combat.ProjectileFlight.launch(world, caster, aim.origin(),
-                    direction.scale(spec.speed()), spec.gravity(), spec.maxLifetimeTicks(), look, seekOf(spec),
-                    () -> runs.isCurrent(run),
-                    new io.github.butterflysmp.rpg.core.combat.ProjectileFlight.Impact() {
-                        // F3's origins: on a MOB, the struck body's own position (its feet), so the ring reaches it at
-                        // distance 0 and on the burst's tick (F5: the direct hit adds nothing); on a BLOCK, the point
-                        // the trace met it; at the END OF RANGE, the end of the last step.
-                        @Override public void at(Combatant target, Vec3 point) {
-                            burstAt(ability, caster, spec.burst(), run, n, target != null ? "mob" : "block",
-                                    target != null ? target.state().position() : point);
-                        }
+        world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.shot(run.label(), caster.id(), n, direction));
+        io.github.butterflysmp.rpg.core.combat.ProjectileFlight.launch(world, caster, origin,
+                direction.scale(spec.speed()), spec.gravity(), spec.maxLifetimeTicks(), look, seekOf(spec),
+                () -> runs.isCurrent(run),
+                new io.github.butterflysmp.rpg.core.combat.ProjectileFlight.Impact() {
+                    // F3's origins: on a MOB, the struck body's own position (its feet), so the ring reaches it at
+                    // distance 0 and on the burst's tick (F5: the direct hit adds nothing); on a BLOCK, the point
+                    // the trace met it; at the END OF RANGE, the end of the last step.
+                    @Override public void at(Combatant target, Vec3 point) {
+                        burstAt(ability, caster, spec.burst(), run, n, target != null ? "mob" : "block",
+                                target != null ? target.state().position() : point);
+                    }
 
-                        @Override public void expired(Vec3 point, Vec3 velocity) {
-                            burstAt(ability, caster, spec.burst(), run, n, "range", point);
-                        }
-                    });
-        }
+                    @Override public void expired(Vec3 point, Vec3 velocity) {
+                        burstAt(ability, caster, spec.burst(), run, n, "range", point);
+                    }
+                });
     }
 
     /**

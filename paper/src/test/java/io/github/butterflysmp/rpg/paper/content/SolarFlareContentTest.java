@@ -1,12 +1,9 @@
 package io.github.butterflysmp.rpg.paper.content;
 
-import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.combat.PulseLine;
-import io.github.butterflysmp.rpg.core.combat.SpreadPattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -28,9 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * SOLAR FLARE AS SHIPPED (the seat's F1, F3, F4, F6, F10 to F12, 2026-11-27): the bundled file, loaded through the real
- * loader, carries Ben's numbers; its fan is exactly -30, 0, +30; its flight reaches exactly 15.0 blocks; its burst is
- * Smolder's own ring; its prose states its own numbers; and the placeholder it replaced is gone.
+ * SOLAR FLARE AS SHIPPED (the seat's F3, F6, F11, F12, 2026-11-27, and N1 to N7 as Ben changed it on 2026-11-28): the
+ * bundled file, loaded through the real loader, carries Ben's numbers; three shots one after another, 10 ticks apart;
+ * each flight reaches exactly 32.0 blocks in 0.8 s; each burst is instant within 6 blocks and draws its own firework;
+ * its prose states its own numbers; and the placeholder it replaced is gone.
  */
 class SolarFlareContentTest {
 
@@ -69,36 +67,88 @@ class SolarFlareContentTest {
         assertEquals("mana", def.cost().resourceId());
         assertEquals(80, def.cost().amount());
         var p = assertInstanceOf(CastSpec.Projectile.class, def.cast());
-        assertEquals(new CastSpec.Projectile(0.9375, 0.0, 16, "solar_flare_trail", "fire_charge", null, null,
-                new CastSpec.Spread(3, 30), 0, new CastSpec.Pulses(1, 1, 6.0, 15, "solar_flare_ring", "solar_flare_burst"), 2.5), p);
+        assertEquals(new CastSpec.Projectile(2.0, 0.0, 16, "solar_flare_trail", "fire_charge", null, null, null, 0,
+                new CastSpec.Pulses(1, 1, 6.0, 0, null, "solar_flare_burst"), 2.5, new CastSpec.Projectile.Salvo(3, 10)), p,
+                "N1 to N4: three shots 10 apart, 2.0 a tick for 16, an instant burst of 6, its own firework, no fan, no ring");
         assertEquals(List.of(new EffectSpec.Damage(250, "fire")), def.onHit(), "A1's rule: the damage only");
     }
 
-    /** F1: the flight is straight and its sixteen steps reach exactly 15.0 blocks; Ben's 0.8 s is those 16 ticks. */
+    /**
+     * N1, N2 (Ben: ".5 seconds", "0.8 seconds for the 32 blocks"): the shots are 10 ticks (0.5 s) apart, the flight is
+     * straight and its sixteen steps reach exactly 32.0 blocks (16 x 2.0, exact in binary), in 16 ticks (0.8 s).
+     */
     @Test
-    void theFlightReachesExactlyFifteenBlocksInSixteenTicks() throws IOException {
+    void threeShotsHalfASecondApartEachFlyingExactlyThirtyTwoBlocksInPointEightSeconds() throws IOException {
         var p = (CastSpec.Projectile) flare().cast();
+        assertEquals(3, p.salvo().count());
+        assertEquals(0.5, p.salvo().intervalTicks() / 20.0, 1e-12);
         assertEquals(0.0, p.gravity());
-        assertEquals(15.0, p.maxLifetimeTicks() * p.speed(), 0.0, "exact in binary: 16 x 0.9375");
+        assertEquals(32.0, p.maxLifetimeTicks() * p.speed(), 0.0);
         assertEquals(0.8, p.maxLifetimeTicks() / 20.0, 1e-12);
+        assertEquals(null, p.spread(), "no fan");
     }
 
-    /** F1: the shipped spread, through the engine's own pattern, is the aim and the aim turned 30 degrees each way. */
+    /**
+     * N3, N4 (Route B): the burst is instant (travel 0) within 6 blocks, and its visual, parsed by the loader we run, is
+     * an orange ball thrown out to the burst's own 6 blocks, a yellow one inside it, firework sparks and the firework's
+     * blast and twinkle; nothing in it can spawn an entity (a visual step is a particle or a sound).
+     */
     @Test
-    void theFanIsMinusThirtyZeroPlusThirty() throws IOException {
+    void theBurstIsInstantAndDrawsAFireworkOfParticlesAndSounds() throws IOException {
         var p = (CastSpec.Projectile) flare().cast();
-        Vec3 east = new Vec3(1, 0, 0);
-        Vec3 right = new Vec3(0, 0, 1);
-        List<Double> yaws = new ArrayList<>();
-        for (Vec3 d : SpreadPattern.directionsFor(east, right, p.spread())) yaws.add(Math.round(PulseLine.yawOf(d) * 1e9) / 1e9);
-        yaws.sort(Double::compare);
-        assertEquals(List.of(-120.0, -90.0, -60.0), yaws, "east is -90: -30, 0, +30 about the aim");
-        // And at a pitched aim the fan stays in his VIEW plane, each 30 degrees off the aim.
-        Vec3 up = new Vec3(1, 1, 0).normalize();
-        for (Vec3 d : SpreadPattern.directionsFor(up, right, p.spread())) {
-            double angle = Math.toDegrees(Math.acos(Math.min(1, d.normalize().dot(up))));
-            assertTrue(Math.abs(angle) < 1e-9 || Math.abs(angle - 30) < 1e-9, "30 off the aim, or on it: " + angle);
+        assertEquals(0, p.burst().travelTicks());
+        assertEquals(6.0, p.burst().radius());
+        try (var in = getClass().getResourceAsStream("/content/visuals/solar_flare_burst.yml")) {
+            assertNotNull(in);
+            Files.createDirectories(dir.resolve("v"));
+            Files.write(dir.resolve("v/solar_flare_burst.yml"), in.readAllBytes());
         }
+        Logger log = Logger.getAnonymousLogger();
+        log.setUseParentHandlers(false);
+        var steps = new VisualLoader(log).loadAll(dir.resolve("v").toFile()).find("solar_flare_burst").orElseThrow().steps();
+        var balls = steps.stream().filter(VisualSpec.Particles.class::isInstance).map(VisualSpec.Particles.class::cast)
+                .filter(s -> s.trail() != null).toList();
+        assertEquals(List.of(6.0, 4.5), balls.stream().map(b -> b.trail().burstRadius()).toList());
+        assertEquals(List.of(org.bukkit.Color.fromRGB(255, 120, 0), org.bukkit.Color.fromRGB(255, 220, 40)),
+                balls.stream().map(b -> b.trail().color()).toList(), "orange, then yellow");
+        assertEquals(p.burst().radius(), balls.get(0).trail().burstRadius(), "the orange ball shows the burst's reach");
+        assertTrue(steps.stream().anyMatch(s -> s instanceof VisualSpec.Particles q && q.particle() == org.bukkit.Particle.FIREWORK));
+        assertEquals(List.of("entity.firework_rocket.large_blast", "entity.firework_rocket.twinkle"),
+                steps.stream().filter(VisualSpec.Sound.class::isInstance).map(s -> ((VisualSpec.Sound) s).key()).toList());
+        assertTrue(steps.stream().allMatch(s -> s instanceof VisualSpec.Particles || s instanceof VisualSpec.Sound),
+                "particles and sounds only");
+    }
+
+    /**
+     * THE SEAT'S Q1 (2026-11-28): A BURST 32 BLOCKS AWAY IS SENT, DRAWN AND HEARD. Every particle step of the burst and of
+     * the trail is {@code long_distance} (READ: without force the server sends within 32.0 of his block centre and the
+     * client drops beyond 32; the range burst's centre is about 32.02 from his block centre). Every sound of the burst has
+     * a volume whose reach, 16 x volume (READ: the server's {@code SoundEvent.getRange} and the client's {@code max(volume,
+     * 1) x attenuation 16}, sounds.json setting none for these), covers the farthest he can be from a burst, 32 + 1.62
+     * of height, with margin: at least 3.0 (48 blocks).
+     */
+    @Test
+    void theBurstAndTheTrailAreSentDrawnAndHeardFromThirtyTwoBlocks() throws IOException {
+        Files.createDirectories(dir.resolve("q1"));
+        for (String id : List.of("solar_flare_burst", "solar_flare_trail")) {
+            try (var in = getClass().getResourceAsStream("/content/visuals/" + id + ".yml")) {
+                assertNotNull(in);
+                Files.write(dir.resolve("q1/" + id + ".yml"), in.readAllBytes());
+            }
+        }
+        Logger log = Logger.getAnonymousLogger();
+        log.setUseParentHandlers(false);
+        var visuals = new VisualLoader(log).loadAll(dir.resolve("q1").toFile());
+        for (String id : List.of("solar_flare_burst", "solar_flare_trail")) {
+            var steps = visuals.find(id).orElseThrow(() -> new AssertionError(id)).steps();
+            var particles = steps.stream().filter(VisualSpec.Particles.class::isInstance).map(VisualSpec.Particles.class::cast).toList();
+            assertFalse(particles.isEmpty(), id);
+            assertTrue(particles.stream().allMatch(VisualSpec.Particles::longDistance), id + ": every particle step long-distance");
+        }
+        var sounds = visuals.find("solar_flare_burst").orElseThrow().steps().stream().filter(VisualSpec.Sound.class::isInstance)
+                .map(VisualSpec.Sound.class::cast).toList();
+        assertEquals(2, sounds.size());
+        for (var s : sounds) assertTrue(16 * s.volume() >= 48, s.key() + " reaches " + 16 * s.volume());
     }
 
     /** F12: the menu's prose rebuilt from the parsed definition: the count, the burst's radius, the damage. */
@@ -108,7 +158,7 @@ class SolarFlareContentTest {
         var p = (CastSpec.Projectile) def.cast();
         var d = (EffectSpec.Damage) def.onHit().get(0);
         String[] words = {"zero", "one", "two", "three", "four"};
-        assertEquals(List.of("Fire " + words[p.spread().count()] + " great fireballs in a fan.",
+        assertEquals(List.of("Fire " + words[p.salvo().count()] + " great fireballs, one after another.",
                 "Each bursts within " + Math.round(p.burst().radius()) + " blocks for " + Math.round(d.amount())
                         + " fire damage and scorches."), def.description());
     }

@@ -1563,7 +1563,16 @@ public final class PaperCombatWorld implements CombatWorld {
      * reader must not conclude from this javadoc that nothing exercises it.
      */
     private void particles(VisualSpec.Particles p, Location at) {
+        // A TRAIL BURST (N4, Route B): one particle per sphere point, each from the drawn point to its own target.
+        var targets = p.burstTargets(at);
+        if (!targets.isEmpty()) {
+            for (Location target : targets) {
+                world.spawnParticle(p.particle(), at, 1, 0.0, 0.0, 0.0, 0.0,
+                        new org.bukkit.Particle.Trail(target, p.trail().color(), p.trail().durationTicks()), p.longDistance());
+            }
+            return;
+        }
         world.spawnParticle(p.particle(), at, p.count(),
-                p.spread(), p.spread(), p.spread(), p.speed(), p.dataAt(at));   // a TRAIL targets its own point (M3)
+                p.spread(), p.spread(), p.spread(), p.speed(), p.dataAt(at), p.longDistance());   // a TRAIL targets its own point (M3)
     }
 }

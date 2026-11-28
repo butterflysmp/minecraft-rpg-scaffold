@@ -127,7 +127,11 @@ final class AbilitySchema {
                         // optional, as a pulses cast's; it is ONE front, so it has no count or interval to author.
                         parseBurst(s.getConfigurationSection("burst")),
                         // THE SCALED BODY (F9): OPTIONAL, absent is 0 (the dropped item every item body was before).
-                        s.getDouble("body_scale", 0.0));
+                        s.getDouble("body_scale", 0.0),
+                        // THE SALVO (Solar Flare, the seat's N1, 2026-11-28): OPTIONAL, absent is null; present, its count and
+                        // interval_ticks are REQUIRED (CastSpec.Projectile.Salvo judges them, and the record refuses a
+                        // salvo without a burst or beside a spread).
+                        parseSalvo(s.getConfigurationSection("salvo")));
             }
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
@@ -172,6 +176,12 @@ final class AbilitySchema {
      * are required, {@code ring} and {@code pulse} optional; a {@code count} or {@code interval_ticks} key is refused by
      * name, because a burst is one front and an authored number nobody could see doing nothing is the worse file.
      */
+    /** A projectile's {@code salvo:} block (N1), or null: {@code count} and {@code interval_ticks}, both required. */
+    static CastSpec.Projectile.Salvo parseSalvo(org.bukkit.configuration.ConfigurationSection s) {
+        if (s == null) return null;
+        return new CastSpec.Projectile.Salvo(reqInt(s, "count"), reqInt(s, "interval_ticks"));
+    }
+
     /** A pulses cast's {@code spiral:} block (M2), or null: {@code arms}, {@code turns} and {@code visual}, each required. */
     static CastSpec.Pulses.SpiralArms parseSpiralArms(org.bukkit.configuration.ConfigurationSection s) {
         if (s == null) return null;
