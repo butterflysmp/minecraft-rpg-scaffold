@@ -233,6 +233,7 @@ final class SelfTestDrivers {
             });
             case CLASS -> stageClass(p, a);
             case ACCESSORY -> stageAccessory(p, a);
+            case STONE -> stageStone(p);
             case SATURATION -> {
                 float before = p.getSaturation();
                 p.setSaturation(Float.parseFloat(a.trim()));   // the loader refused anything but a number in 0..20
@@ -261,6 +262,32 @@ final class SelfTestDrivers {
                 yield Optional.empty();
             }
         };
+    }
+
+    /**
+     * STONE (GATE-smolder, 2026-11-27): the Ability Stone into his hotbar by the join's own call, so a row that
+     * cleared his storage can cast from it. {@code NexusSlots.converge} keeps a stone already there and mints one where
+     * there is none, at his stone slot, exactly as {@code RpgListeners.convergeStone} does at a join (without that
+     * method's switched-off guard: the row needs the stone whatever his setting, and the run's restore puts his own
+     * inventory back).
+     */
+    private Optional<String> stageStone(Player p) {
+        java.util.UUID id = p.getUniqueId();
+        Optional<io.github.butterflysmp.rpg.storage.PlayerProfile> profile = run.profiles().profile(id);
+        if (profile.isEmpty()) return Optional.of("his profile is not loaded");
+        boolean found = false;
+        for (ItemStack it : p.getInventory().getStorageContents()) {
+            if (it != null && StoneItems.isStone(it, keys)) found = true;
+        }
+        int slot = io.github.butterflysmp.rpg.paper.nexus.NexusSlots.stoneSlotOf(profile.get());
+        run.adapters().stones().refreshLore(p, profile);
+        io.github.butterflysmp.rpg.paper.nexus.NexusSlots.converge(p, run.adapters().stones().lockedItem(id, profile), slot);
+        boolean held = false;
+        for (ItemStack it : p.getInventory().getStorageContents()) {
+            if (it != null && StoneItems.isStone(it, keys)) held = true;
+        }
+        run.log("STAGE stone slot=" + slot + " found=" + (found ? 1 : 0) + " held=" + (held ? 1 : 0));
+        return held ? Optional.empty() : Optional.of("the stone did not converge into his inventory");
     }
 
     /**

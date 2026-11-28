@@ -1,0 +1,259 @@
+# GATE-solar-flare (docs/gates/GATE-solar-flare.md): SOLAR FLARE (#340), 2026-11-27. Typed as ONE command for the whole
+# stack, this gate LAST:
+#   /rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder+solar-flare
+# SURVIVAL. On the pad, at NIGHT (18000), difficulty normal, no natural spawns. ALL AUTO except SF9, this gate's ONE ASK,
+# the command's last step. SF1 picks Ranger, Fire and Solar Flare on Q through the Build screen (the pick is SAVED:
+# CARRIED STATE); every later row is SKIPPED unless his cell reads ranger fire. Every row clears his state and storage,
+# sets level 1, converges the stone and casts from it in hand (score 100, no enchant, class or level term), facing due
+# east, level (yaw -90, pitch 0). Every mob is a frozen NoAI zombie at max_health 600 (3000 custom), placed at the
+# coordinates SolarFlareGateArithmeticTest executes; his wolf is frozen with NoAI. SAFETY 0.000: the ring (PULSE) and
+# Ignite (IGNITE_SPLASH) spare players, EXECUTED there; no row damages him.
+setup:
+  - pad: ""
+  - preflight: "-2 -13 33 13"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# SF1: THE BUILD SCREEN AS HIS SAVED BUILD READS (F11: a saved Q naming the deleted placeholder reads EMPTY, with one
+# BUILD unoffered line), then Ranger, Fire and Solar Flare picked: the picker's lore, then the cell's.
+SF1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "build"
+  - wait: 3
+  - dump: menu
+  - click: "Class"
+  - wait: 3
+  - click: "Ranger"
+  - wait: 3
+  - click: "Element"
+  - wait: 3
+  - click: "Fire"
+  - wait: 3
+  - dump: menu
+  - click: "Q: "
+  - wait: 3
+  - dump: menu
+  - click: "Solar Flare"
+  - wait: 3
+  - dump: menu
+  - close: ""
+  - wait: 2
+  - stone: ""
+  - hold: stone
+  - dump: held
+
+# SF2: THE FAN AND THE RANGE. No mob in the flight paths; z4 4 past the centre's range origin, z7 7 past it.
+SF2:
+  - expect_cell: "ranger fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~19 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["z4","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~22 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["z7","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "z4 24"
+  - probe: "z7 24"
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - drop: selected
+  - probe_mana: ""
+  - wait: 5
+  - probe_entities: "item_display 24"
+  - wait: 15
+  - probe_entities: "item_display 24"
+  - wait: 140
+  - probe: "z4 24"
+  - probe: "z7 24"
+
+# SF3: A MOB STOPS IT. s8 on the centre line 8 out; s13 5 beyond it.
+SF3:
+  - expect_cell: "ranger fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["s8","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~13 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["s13","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "s8 24"
+  - probe: "s13 24"
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 160
+  - probe: "s8 24"
+  - probe: "s13 24"
+
+# SF4: A BLOCK STOPS IT. Stone at 6 east, head height, on the centre line; b at 7 east, 1.5 north.
+SF4:
+  - expect_cell: "ranger fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - save_blocks: "6 1 0 6 1 0"
+  - cmd: "setblock ~6 ~1 ~0 minecraft:stone"
+  - probe_blocks: "STONE 6 1 0 6 1 0"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~7 ~ ~-1.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["b","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "b 24"
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 160
+  - probe: "b 24"
+
+# SF5: OVERLAP. First t, inside rings 2 and 3 at range; then a wall at 3 east (head height, 5 wide) and u behind it at
+# 4.5, inside all three rings when every shot is stopped by the wall.
+SF5:
+  - expect_cell: "ranger fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~14 ~ ~4 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "t 24"
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 160
+  - probe: "t 24"
+  - clear_state: ""
+  - save_blocks: "3 1 -2 3 1 2"
+  - cmd: "fill ~3 ~1 ~-2 ~3 ~1 ~2 minecraft:stone"
+  - probe_blocks: "STONE 3 1 -2 3 1 2"
+  - cmd: 'summon zombie ~4.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["u","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "u 24"
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 160
+  - probe: "u 24"
+
+# SF6: SUMMONS AND THE CASTER. His wolf at 14 east, 2 north, inside ring 2; w, the control, at 16 east, 2 south.
+SF6:
+  - expect_cell: "ranger fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - cmd: "data merge entity @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] {NoAI:1b}"
+  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~14 ~ ~-2"
+  - clear_inventory: ""
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~16 ~ ~2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["w","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "w 24"
+  - probe_summon: "24"
+  - probe_self: ""
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 70
+  - probe: "w 24"
+  - probe_summon: "24"
+  - probe_self: ""
+
+# SF7: THE COST AND THE COOLDOWN. A cast; a second press 2 ticks later (refused: the cooldown); clear_state; his mana
+# set to 79; a press (refused: the mana). No mob.
+SF7:
+  - expect_cell: "ranger fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - drop: selected
+  - wait: 2
+  - drop: selected
+  - probe_mana: ""
+  - wait: 20
+  - clear_state: ""
+  - wait: 2
+  - cmd: "rpg mana set 79"
+  - probe_mana: ""
+  - drop: selected
+  - probe_mana: ""
+  - wait: 20
+
+# SF8: CANCEL. clear_state at C+5, while all three fly: one cancelled line, no burst, no body left.
+SF8:
+  - expect_cell: "ranger fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 3
+  - probe_entities: "item_display 24"
+  - wait: 2
+  - clear_state: ""
+  - wait: 3
+  - probe_entities: "item_display 24"
+  - wait: 30
+
+# SF9 (THE ASK): a cast down the pad, and the question once all three rings have gone out.
+SF9:
+  - expect_cell: "ranger fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - tell: "Solar Flare is cast now, east down the pad. Stand still and watch the three fireballs and where each one bursts."
+  - drop: selected
+  - wait: 60
+  - ask: "1 3600 Did three large fireballs fly out in a fan, and did each burst into a ring of fire that spread outward? (yes / no / not sure)"

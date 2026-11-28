@@ -72,7 +72,7 @@ class GateDocumentSectionsTest {
     void everyShippedGateDocumentHasBothOrIsGrandfathered() throws IOException {
         List<String> gates = List.copyOf(ScenarioLoader.load(path -> GateDocumentSectionsTest.class.getClassLoader()
                 .getResourceAsStream(path)).gates().keySet());
-        assertEquals(57, gates.size(), "control: the 57 shipped gates were listed (true-tooltips; blast-fungus; bone-club; healing-tome; blink-tome; held-target, 2026-11-26; mana-battery, 2026-11-27)");
+        assertEquals(59, gates.size(), "control: the 59 shipped gates were listed (true-tooltips; blast-fungus; bone-club; healing-tome; blink-tome; held-target, 2026-11-26; mana-battery, smolder, solar-flare, 2026-11-27)");
         List<String> lacking = new ArrayList<>();
         int both = 0;
         for (String g : gates) {

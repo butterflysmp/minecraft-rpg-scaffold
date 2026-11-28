@@ -157,3 +157,10 @@ gates:
 # mana-battery (2026-11-27, feat/mana-battery-gate on feat/owed-v7 on feat/mana-battery): Mana Battery (B1-B6) and the owed
 # V7 rows, typed LAST as /rpg selftest held-target.S3.S5+mana-battery. docs/gates/GATE-mana-battery.md.
   - mana-battery
+# smolder (2026-11-27, feat/smolder-gate on feat/water-douses-scorch on feat/smolder): Smolder (Z1-Z11) and water puts
+# out Scorch (Y1-Y7, E1-E4), typed LAST as /rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder.
+# docs/gates/GATE-smolder.md.
+  - smolder
+# solar-flare (2026-11-27, feat/smolder-gate moved onto feat/solar-flare): Solar Flare (F1-F14), typed LAST as
+# /rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder+solar-flare. docs/gates/GATE-solar-flare.md.
+  - solar-flare
