@@ -88,16 +88,7 @@ class SolarFlareContentTest {
         assertEquals(null, p.spread(), "no fan");
     }
 
-    /**
-     * N3, N4 (Route B): the burst is instant (travel 0) within 6 blocks, and its visual, parsed by the loader we run, is
-     * an orange ball thrown out to the burst's own 6 blocks, a yellow one inside it, firework sparks and the firework's
-     * blast and twinkle; nothing in it can spawn an entity (a visual step is a particle or a sound).
-     */
-    @Test
-    void theBurstIsInstantAndDrawsAFireworkOfParticlesAndSounds() throws IOException {
-        var p = (CastSpec.Projectile) flare().cast();
-        assertEquals(0, p.burst().travelTicks());
-        assertEquals(6.0, p.burst().radius());
+    private List<VisualSpec> burstSteps() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/visuals/solar_flare_burst.yml")) {
             assertNotNull(in);
             Files.createDirectories(dir.resolve("v"));
@@ -105,18 +96,68 @@ class SolarFlareContentTest {
         }
         Logger log = Logger.getAnonymousLogger();
         log.setUseParentHandlers(false);
-        var steps = new VisualLoader(log).loadAll(dir.resolve("v").toFile()).find("solar_flare_burst").orElseThrow().steps();
-        var balls = steps.stream().filter(VisualSpec.Particles.class::isInstance).map(VisualSpec.Particles.class::cast)
-                .filter(s -> s.trail() != null).toList();
-        assertEquals(List.of(6.0, 4.5), balls.stream().map(b -> b.trail().burstRadius()).toList());
-        assertEquals(List.of(org.bukkit.Color.fromRGB(255, 120, 0), org.bukkit.Color.fromRGB(255, 220, 40)),
-                balls.stream().map(b -> b.trail().color()).toList(), "orange, then yellow");
-        assertEquals(p.burst().radius(), balls.get(0).trail().burstRadius(), "the orange ball shows the burst's reach");
-        assertTrue(steps.stream().anyMatch(s -> s instanceof VisualSpec.Particles q && q.particle() == org.bukkit.Particle.FIREWORK));
-        assertEquals(List.of("entity.firework_rocket.large_blast", "entity.firework_rocket.twinkle"),
-                steps.stream().filter(VisualSpec.Sound.class::isInstance).map(s -> ((VisualSpec.Sound) s).key()).toList());
+        return new VisualLoader(log).loadAll(dir.resolve("v").toFile()).find("solar_flare_burst").orElseThrow().steps();
+    }
+
+    /**
+     * N3, N4 (Route B) as Ben changed it on 2026-11-28 (the seat's V2, V3): the burst is instant (travel 0) within 6
+     * blocks, and its visual, parsed by the loader we run, is three ORANGE TRAIL bursts: the ball thrown out to the
+     * burst's own 6 blocks, a second ball to 4.5 inside it (the seat's V2: "the second TRAIL ball takes the first's
+     * orange"), and the sparks, now an orange TRAIL burst to 5.5 over 20 ticks (CC'S CALL: the FIREWORK spark cannot be
+     * coloured from the server, READ); then ONE sound, a deep explosion boom. Nothing in it can spawn an entity (a visual
+     * step is a particle or a sound).
+     */
+    @Test
+    void theBurstIsInstantAndDrawsThreeOrangeBurstsAndOneDeepBoom() throws IOException {
+        var p = (CastSpec.Projectile) flare().cast();
+        assertEquals(0, p.burst().travelTicks());
+        assertEquals(6.0, p.burst().radius());
+        var steps = burstSteps();
+        var bursts = steps.stream().filter(VisualSpec.Particles.class::isInstance).map(VisualSpec.Particles.class::cast).toList();
+        assertEquals(List.of(6.0, 4.5, 5.5), bursts.stream().map(b -> b.trail().burstRadius()).toList(),
+                "the ball, the inner ball, the sparks");
+        assertEquals(List.of(10, 10, 20), bursts.stream().map(b -> b.trail().durationTicks()).toList(),
+                "each lives exactly its duration (READ: TRAIL's lifetime is the server's)");
+        assertEquals(List.of(90, 60, 40), bursts.stream().map(VisualSpec.Particles::count).toList(),
+                "the sparks keep the sparks' 40");
+        assertEquals(p.burst().radius(), bursts.get(0).trail().burstRadius(), "the outer ball shows the burst's reach");
+        assertEquals(List.of(new VisualSpec.Sound("entity.generic.explode",
+                        org.bukkit.NamespacedKey.minecraft("entity.generic.explode"), 3.0f, 0.7f)),
+                steps.stream().filter(VisualSpec.Sound.class::isInstance).toList(),
+                "V3 (Ben: \"b\", a deep explosion boom): ONE sound, low (0.7), reaching 16 x 3.0 = 48");
         assertTrue(steps.stream().allMatch(s -> s instanceof VisualSpec.Particles || s instanceof VisualSpec.Sound),
                 "particles and sounds only");
+    }
+
+    /**
+     * V2 (Ben, 2026-11-28: "Make the particles orange too"; the seat's reading: EVERY particle of the burst is orange):
+     * NO WHITE OR YELLOW PARTICLE REMAINS. Every particle step of the burst is a TRAIL whose colour is the ball's orange
+     * [255, 120, 0] exactly: the FIREWORK spark (white: the client's spark provider sets no colour, READ) is gone, and so
+     * is the yellow [255, 220, 40]. A particle step with no colour data at all fails here too.
+     */
+    @Test
+    void everyParticleOfTheBurstIsOrange() throws IOException {
+        var particles = burstSteps().stream().filter(VisualSpec.Particles.class::isInstance)
+                .map(VisualSpec.Particles.class::cast).toList();
+        assertEquals(3, particles.size(), "CONTROL: the burst's particle steps were read");
+        for (var q : particles) {
+            assertEquals(org.bukkit.Particle.TRAIL, q.particle(), "a particle the server colours");
+            assertEquals(org.bukkit.Color.fromRGB(255, 120, 0), q.trail().color(), "orange, never white or yellow");
+        }
+    }
+
+    /**
+     * V3: NO FIREWORK KEY REMAINS IN THE FILE. Gone from the parsed steps, and no firework sound id
+     * ({@code firework_rocket}) appears anywhere in the file's text, comments included, so neither a step nor a
+     * commented-out one can carry one back. Control: the replacement's key IS in the text the check reads.
+     */
+    @Test
+    void noFireworkKeyRemainsInTheBurst() throws IOException {
+        var keys = burstSteps().stream().filter(VisualSpec.Sound.class::isInstance).map(s -> ((VisualSpec.Sound) s).key()).toList();
+        assertEquals(List.of("entity.generic.explode"), keys);
+        String text = Files.readString(Path.of("src/main/resources/content/visuals/solar_flare_burst.yml"), StandardCharsets.UTF_8);
+        assertTrue(text.contains("key: entity.generic.explode"), "CONTROL: the check reads the file");
+        assertFalse(text.contains("firework_rocket"), "a firework sound id is still in the file");
     }
 
     /**
@@ -147,7 +188,7 @@ class SolarFlareContentTest {
         }
         var sounds = visuals.find("solar_flare_burst").orElseThrow().steps().stream().filter(VisualSpec.Sound.class::isInstance)
                 .map(VisualSpec.Sound.class::cast).toList();
-        assertEquals(2, sounds.size());
+        assertEquals(1, sounds.size(), "V3: one sound replaces the two");
         for (var s : sounds) assertTrue(16 * s.volume() >= 48, s.key() + " reaches " + 16 * s.volume());
     }
 

@@ -1,0 +1,68 @@
+# GATE-smolder-3 (docs/gates/GATE-smolder-3.md): SMOLDER'S NINE ARMS (Ben, 2026-11-28: "Can we try 9 spirals"; the seat's
+# V1), ONE ROW AND ONE ASK. Typed alone (/rpg selftest smolder-3) or with GATE-solar-flare-3, this gate first:
+#   /rpg selftest smolder-3+solar-flare-3
+# SURVIVAL. On the pad, at NIGHT (18000), difficulty normal, no natural spawns, each put back by the run's restore: the
+# setup is GATE-smolder-2's, step for step. SM8 picks Mage, Fire and Smolder on Q as SM1R did (the run puts his stored
+# builds back: D2), stops if his cell does not read mage fire, then stages the ask as SM7R did: the cast from G = F + (10,
+# 0) with his view set one tick before it, moved 8 east after the first pulse, the question after the fourth spiral has
+# faded. No mob. SAFETY 0.000: the pulse spares players (PULSE, EXECUTED in UltimatesTwoGateArithmeticTest); no step
+# damages him.
+setup:
+  - pad: ""
+  - preflight: "-2 -12 30 12"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# SM8: THE PICK (SM1R's, without its dumps), then THE ASK (SM7R's staging; this gate's one question).
+SM8:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "build"
+  - wait: 3
+  - click: "Class"
+  - wait: 3
+  - click: "Mage"
+  - wait: 3
+  - click: "Element"
+  - wait: 3
+  - click: "Fire"
+  - wait: 3
+  - click: "Q: "
+  - wait: 3
+  - click: "Smolder"
+  - wait: 3
+  - close: ""
+  - wait: 2
+  - expect_cell: "mage fire"
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - tell: "Smolder is cast in a moment from your feet. Keep your mouse still and stand still; you will be moved 8 blocks east after the first pulse. Watch the fire spread out."
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - wait: 19
+  - cmd: "tp @s ~8 ~ ~"
+  - wait: 111
+  - ask: "1 3600 Did nine spiral arms of fire wind out from your feet, and are there enough particles now? (yes / no / not sure)"

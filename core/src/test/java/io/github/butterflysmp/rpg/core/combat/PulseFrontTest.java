@@ -174,6 +174,46 @@ class PulseFrontTest {
         }
     }
 
+    /**
+     * V1 (the seat, 2026-11-28; Ben: "Can we try 9 spirals"): AT NINE ARMS, ONLY THE ARM COUNT MOVES. Every point of
+     * every tick lies on one of nine arms, 40 degrees apart ({@code k x 2 pi / 9}), at the front's radius band; each arm's
+     * tip is AT {@code radiusAt(t)}; each arm draws as many points as an arm of three does (the spacing is per arm); and
+     * no two consecutive points of one arm are more than the spacing (plus 5%) apart. a0, the hand and the turns are the
+     * same function's, so arm 0 is unchanged.
+     */
+    @Test
+    void atNineArmsEveryPointLiesOnOneOfNineArmsAndEachArmIsDrawnAsAThreeArmSpiralsArmIs() {
+        Vec3 origin = new Vec3(10, 64, -5);
+        Vec3[] last = new Vec3[9];
+        java.util.Arrays.fill(last, new Vec3(10, 64.1, -5));
+        for (int t = 1; t <= 15; t++) {
+            double from = PulseFront.radiusAt(t - 1, RADIUS, 15);
+            double to = PulseFront.radiusAt(t, RADIUS, 15);
+            List<Vec3> points = PulseFront.spiralPoints(origin, from, to, 9, 1.0, RADIUS);
+            List<Vec3> threeArms = PulseFront.spiralPoints(origin, from, to, 3, 1.0, RADIUS);
+            assertEquals(3 * threeArms.size(), points.size(), "tick " + t + ": each arm as many points as at three");
+            int perArm = points.size() / 9;
+            for (int k = 0; k < 9; k++) {
+                for (int i = 0; i < perArm; i++) {
+                    Vec3 p = points.get(k * perArm + i);
+                    double r = PulseFront.horizontal(origin, p);
+                    assertTrue(r > from - 1e-9 && r <= to + 1e-9, "tick " + t + " arm " + k + ": r " + r);
+                    double drawn = Math.atan2(p.z() - origin.z(), p.x() - origin.x());
+                    double expected = PulseFront.spiralAngle(k, 9, 1.0, r, RADIUS);
+                    assertTrue(Math.abs(Math.IEEEremainder(drawn - expected, 2 * Math.PI)) < 1e-9, "tick " + t + " arm " + k);
+                    assertTrue(p.subtract(last[k]).length() <= PulseFront.SPIRAL_SPACING_BLOCKS * 1.05,
+                            "arm " + k + " tick " + t + ": a gap of " + p.subtract(last[k]).length());
+                    last[k] = p;
+                }
+                assertEquals(to, PulseFront.horizontal(origin, points.get(k * perArm + perArm - 1)), 1e-9, "tick " + t + " arm " + k + "'s tip");
+            }
+            for (int i = 0; i < perArm; i++) {
+                assertEquals(threeArms.get(i), points.get(i), "tick " + t + ": arm 0 is the same at nine arms as at three");
+            }
+        }
+        assertEquals(2 * Math.PI / 9, PulseFront.spiralAngle(1, 9, 1.0, 0.0, RADIUS), 1e-12, "the arms are 40 degrees apart");
+    }
+
     /** The drawn ring: one centre point at radius 0; at 12 blocks 101 points, every one 12 from the centre, 0.1 up. */
     @Test
     void theRingIsDrawnRoundTheOriginAtGroundLevel() {

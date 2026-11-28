@@ -9,23 +9,41 @@
 # through vanilla's hurtServer and our own damage routing, which only a live server runs. So Route A's zero could not be
 # proven for every body: Route B, as the seat ruled for that case.
 #
-# WHAT IT DRAWS (every number a SEAT PLACEHOLDER 2026-11-28, OPEN FOR BEN; "orange and yellow, a large ball, a firework
-# blast sound"):
-# - an ORANGE ball and a YELLOW one: TRAIL particles thrown from the burst point to points spread evenly over a sphere
-#   (burst_radius; core.shape.SphereDirections). READ, the client's TrailParticle.tick: each moves 1 / (lifetime - age) of
-#   the way to its target every tick, so it flies out in a straight line at a steady speed, reaches the sphere on its last
-#   tick, and is gone: the orange ball grows to 6 blocks (the burst's own reach) in 10 ticks, the yellow to 4.5 inside it.
-# - white firework sparks thrown outward (FIREWORK, the firework's own spark, no data).
-# - the large firework blast and its twinkle (entity.firework_rocket.large_blast and .twinkle, both READ in SoundEvents on
-#   the pinned server jar).
+# ALL ORANGE AND ONE DEEP BOOM, BEN, 2026-11-28 (after the boot of 4f26ca31, SF9R: "yes, but I don't like the firework
+# sound. Make the particles orange too and it will be perfect"; asked what replaces the sound: "b", a deep explosion
+# boom; the seat's V2 and V3). Before this change the burst drew an orange ball, a YELLOW ball [255, 220, 40] and WHITE
+# firework sparks, and played the firework's large blast and its twinkle. Now:
 #
-# SEEN AND HEARD FROM 32 BLOCKS (the seat's Q1, 2026-11-28; every particle step long_distance, both sounds at volume 3.0).
+# WHAT IT DRAWS (every number a SEAT PLACEHOLDER 2026-11-28, OPEN FOR BEN): THREE ORANGE TRAIL BURSTS, [255, 120, 0].
+# Each particle is thrown from the burst point to a point of a sphere (burst_radius; core.shape.SphereDirections). READ,
+# the client's TrailParticle.tick: each moves 1 / (lifetime - age) of the way to its target every tick, so it flies out
+# in a straight line at a steady speed, reaches the sphere on its last tick, and is gone; its lifetime is EXACTLY
+# duration_ticks (READ, TrailParticle$Provider.setLifetime).
+# - the ball: 90, out to 6 blocks (the burst's own reach) in 10 ticks;
+# - the inner ball: 60, out to 4.5 in 10 ticks (it was the yellow one; V2: "the second TRAIL ball takes the first's
+#   orange");
+# - THE SPARKS: 40, out to 5.5 in 20 ticks. They WERE the vanilla FIREWORK particle, which CANNOT be coloured from the
+#   server. READ on Ben's unobfuscated 26.1.2 client jar: ParticleTypes registers `firework` as a SimpleParticleType (its
+#   packet carries no options), and FireworkParticles$SparkProvider.createParticle builds the SparkParticle and sets only
+#   its alpha (0.99), never a colour; only a firework's own Starter colours sparks. So they are an orange TRAIL burst
+#   now (CC'S CALL), keeping their outward throw: a spark left with a velocity of speed 0.3 x a gaussian on each axis
+#   (READ, ClientPacketListener.handleParticleEvent), lost 9% of it a tick (friction 0.91, READ, SimpleAnimatedParticle)
+#   and lived 48 to 59 ticks (READ, SparkParticle), which EXECUTED over 200000 sparks is a throw of 5.57 blocks on
+#   average (median 5.37), half of it in 7 ticks and about 86% in 20. The TRAIL flies that 5.5 at a steady speed instead of
+#   slowing, and is gone at 20 ticks where a spark hung on to 59.
+#
+# THE SOUND: ONE deep explosion (V3, SEAT PLACEHOLDER 2026-11-28): entity.generic.explode at pitch 0.7. Its key READ in
+# SoundEvents on the pinned 26.1.2 server jar (GENERIC_EXPLODE, registerForHolder); sounds.json (Ben's asset index 30)
+# gives it no attenuation_distance, so the client's default 16; the client plays any pitch in [0.5, 2.0] as given (READ,
+# SoundEngine.calculatePitch's clamp), so 0.7 is 0.7. Three bursts 10 ticks apart play it three times: intended.
+#
+# SEEN AND HEARD FROM 32 BLOCKS (the seat's Q1, 2026-11-28; every particle step long_distance, the sound at volume 3.0).
 # READ by javap: without force the server sends a particle only within 32.0 of his block's centre (ServerLevel
 # .sendParticles) and his client drops one beyond 32 from the camera (ClientLevel.doAddParticle); a range burst's centre is
-# 32.0 out at his eye's height, about 32.02 from his block centre, so none of it was sent. long_distance is spawnParticle's
-# force: sent to 512, and drawn by the client whatever the distance or his particle setting. A sound reaches 16 x volume
-# (the server's send, SoundEvent.getRange; the client's hearing, max(volume, 1) x 16, sounds.json setting no attenuation for
-# these): 2.0 and 1.5 reached 32 and 24, short of 32.04; 3.0 reaches 48. How LOUD a volume above 1 plays was not READ.
+# 32.0 out at his eye's height, about 32.02 from his block centre. long_distance is spawnParticle's force: sent to 512,
+# and drawn by the client whatever the distance or his particle setting. A sound reaches 16 x volume (the server's send,
+# SoundEvent.getRange; the client's hearing, max(volume, 1) x its attenuation 16): 3.0 reaches 48, past the 32.04 he can
+# be from a burst. How LOUD a volume above 1 plays was not READ.
 steps:
   - type: particle
     particle: TRAIL
@@ -38,20 +56,17 @@ steps:
     particle: TRAIL
     long_distance: true
     count: 60
-    color: [255, 220, 40]
+    color: [255, 120, 0]
     duration_ticks: 10
     burst_radius: 4.5
   - type: particle
-    particle: FIREWORK
+    particle: TRAIL
     long_distance: true
     count: 40
-    spread: 0.2
-    speed: 0.3
+    color: [255, 120, 0]
+    duration_ticks: 20
+    burst_radius: 5.5
   - type: sound
-    key: entity.firework_rocket.large_blast
+    key: entity.generic.explode
     volume: 3.0
-    pitch: 1.0
-  - type: sound
-    key: entity.firework_rocket.twinkle
-    volume: 3.0
-    pitch: 1.0
+    pitch: 0.7

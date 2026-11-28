@@ -1,0 +1,72 @@
+# GATE-solar-flare-3 (docs/gates/GATE-solar-flare-3.md): SOLAR FLARE'S BURST ALL ORANGE, WITH A DEEP BOOM (Ben, 2026-11-28:
+# "Make the particles orange too", then "b"; the seat's V2 and V3), ONE ROW AND ONE ASK. Typed alone (/rpg selftest
+# solar-flare-3) or after GATE-smolder-3, this gate last:
+#   /rpg selftest smolder-3+solar-flare-3
+# SURVIVAL. On the pad, at NIGHT (18000), difficulty normal, no natural spawns: the setup is GATE-solar-flare-2's, step for
+# step. SF12 picks Ranger, Fire and Solar Flare on Q as SF1R did (the run puts his stored builds back: D2), stops if his
+# cell does not read ranger fire, then stages the ask as SF9R did: the cast from H = F + (5, 0) east down the pad, his
+# view set one tick before each of the three shots (P - 1, P + 10, P + 20), three range bursts at H + 32, the question
+# after the third burst's longest particle (the sparks, 20 ticks) has gone. No mob. SAFETY 0.000: the bursts spare
+# players (PULSE, EXECUTED in UltimatesTwoGateArithmeticTest); the burst is particles and a sound only; no step damages
+# him.
+setup:
+  - pad: ""
+  - preflight: "-2 -13 45 13"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# SF12: THE PICK (SF1R's, without its dumps), then THE ASK (SF9R's staging; this gate's one question).
+SF12:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "build"
+  - wait: 3
+  - click: "Class"
+  - wait: 3
+  - click: "Ranger"
+  - wait: 3
+  - click: "Element"
+  - wait: 3
+  - click: "Fire"
+  - wait: 3
+  - click: "Q: "
+  - wait: 3
+  - click: "Solar Flare"
+  - wait: 3
+  - close: ""
+  - wait: 2
+  - expect_cell: "ranger fire"
+  - cmd: "execute align xz positioned ~5.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - tell: "Solar Flare is cast in a moment, east down the pad. Keep your mouse still and stand still; watch the fireballs leave and where each one bursts."
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - wait: 10
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 10
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 40
+  - ask: "1 3600 Was each burst all orange, with a deep boom in place of the firework sound? (yes / no / not sure)"

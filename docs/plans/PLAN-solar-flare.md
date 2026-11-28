@@ -378,3 +378,83 @@ already ran does nothing, so no row could see it.
 - Passive animals in the bursts and in the flight path (unchanged; asked twice, not answered).
 
 **Only the boot can show:** the three fireballs leaving one after another, the firework as drawn, the sound.
+
+## 7. Ben's changes after the boot of `4f26ca31` (the seat's V2, V3, 2026-11-28), on `feat/ultimates-3`
+
+**Ben, verbatim, at SF9R** (asked "Did three fireballs fly out one after another, and did each explode like a
+firework?"): *"yes, but I don't like the firework sound. Make the particles orange too and it will be perfect"*. Asked
+what should replace the firework sound (a: no sound; b: a deep explosion boom; c: a fire sound; d: something he names):
+*"b"*. The seat's reading, told to Ben: every particle of the burst is orange (it was an orange ball, a smaller yellow
+ball and white sparks).
+
+### V2, ALL ORANGE
+
+- The inner TRAIL ball takes the outer's orange, `[255, 220, 40]` → `[255, 120, 0]`; its 60, 4.5 and 10 ticks unchanged.
+- **THE SPARKS CANNOT BE COLOURED FROM THE SERVER. READ, Ben's unobfuscated 26.1.2 client jar:** `ParticleTypes`
+  registers `firework` with `register(String, boolean)`, a `SimpleParticleType`, so its packet carries no options; and
+  `FireworkParticles$SparkProvider.createParticle` constructs the `SparkParticle` and calls only `setAlpha(0.99f)`. A
+  spark's colour is set only by a firework's own `Starter`. So they stay white whatever the server sends.
+- **CC'S CALL: an orange TRAIL burst, 40 (the sparks' count), out to 5.5 in 20 ticks**, keeping the sparks' outward
+  throw. **The throw, EXECUTED** (200000 sparks through the READ rules: `ClientPacketListener.handleParticleEvent` gives
+  each a velocity of `speed x gaussian` per axis, 0.3; `SimpleAnimatedParticle`'s friction 0.91 and the spark's gravity
+  0.1; `SparkParticle`'s lifetime 48 + nextInt(12); `Particle.tick` ages, removes, then moves): **mean 5.57 blocks,
+  median 5.37, 90th percentile 8.72; half the throw in 7 ticks, about 86% in 20** (in free air; the pad's floor stops a
+  falling spark). **Its READ lifetime: exactly 20 ticks** (`TrailParticle$Provider` passes `duration` to
+  `setLifetime`). The difference, said: a TRAIL flies at a steady speed and vanishes on arrival; a spark slowed and hung
+  on to 59 ticks. The alternative the brief allowed, DUST, has a client-random lifetime (`max(1, (int)(8 / (r x 0.8 +
+  0.2)) x size)`, READ in PLAN-smolder.md M3) and no outward throw of its own.
+- **Pinned:** `SolarFlareContentTest.everyParticleOfTheBurstIsOrange` (every particle step a TRAIL coloured exactly
+  `[255, 120, 0]`: no white, no yellow, no colourless step) and `theBurstIsInstantAndDrawsThreeOrangeBurstsAndOneDeepBoom`
+  (radii 6.0, 4.5, 5.5; 10, 10, 20 ticks; 90, 60, 40). `long_distance` stays true on every step
+  (`theBurstAndTheTrailAreSentDrawnAndHeardFromThirtyTwoBlocks`). **V5:** content and tests only; no visual field needed.
+
+### V3, ONE DEEP BOOM
+
+- Both firework sounds removed; ONE `entity.generic.explode`, **pitch 0.7, volume 3.0** (SEAT PLACEHOLDER 2026-11-28).
+- **READ:** the key is `SoundEvents.GENERIC_EXPLODE` (`registerForHolder` of `"entity.generic.explode"`) on the pinned
+  server jar (`run/versions/26.1.2/paper-26.1.2.jar`, `Specification-Version: 26.1.2.build.74-stable`, `pom.xml`'s
+  `paper.version`); sounds.json in Ben's asset index 30 (object `d4bdfba2…`, its sha1 checked) lists its four
+  `random/explode` files and no `attenuation_distance`, so the client's default 16; the client clamps a pitch to [0.5,
+  2.0] (`SoundEngine.calculatePitch`), so 0.7 plays as 0.7. **Reach: 16 x 3.0 = 48**, sent and heard (Q1's READ of the
+  server's `SoundEvent.getRange` and the client's `max(volume, 1) x attenuation`, which do not depend on the key), past
+  the 32.04 he is from a range burst. Three bursts 10 ticks apart play it three times: intended.
+- **Pinned:** `SolarFlareContentTest.noFireworkKeyRemainsInTheBurst` (the parsed keys are `[entity.generic.explode]`, and
+  no `firework_rocket` appears anywhere in the file's text, comments included; control: the new key is in the text read)
+  and the sound row of `theBurstIsInstantAndDrawsThreeOrangeBurstsAndOneDeepBoom` (key, volume 3.0, pitch 0.7).
+
+**V4:** the trail, the launch sound and visual, and Smolder's sounds are not changed (the diff touches no other visual).
+**V6:** the description names no sound and no colour; `theDescriptionStatesTheFilesOwnNumbers` holds it word for word,
+unedited and green.
+
+**The gate:** `GATE-solar-flare-3.md` (one row, SF12: SF1R's pick, then SF9R's staging; one ask, SEAT PLACEHOLDER
+wording "Was each burst all orange, with a deep boom in place of the firework sound?").
+
+### Mutations (V1 to V3 and the -3 gates)
+
+Each a literal one-line splice (`mut.sh`: the Nth exact occurrence; marker present 1, the original's count down by 1, a
+one-line delta against a scratchpad copy), run, restored by `cp`, byte-identical by `cmp`, markers left 0. All fifteen
+reddened; none was void.
+
+| mutation | the change | red |
+|---|---|---|
+| MUTARMS | `arms: 9` back to 3 | `smolderLoadsWithBensNumbers`, `nineArmsDrawThreeTimes…` |
+| MUTTURNS | `turns: 1.0` to 2.0 (only the arm count may move) | `smolderLoadsWithBensNumbers`, `nineArmsDrawThreeTimes…` (its three-arm control) |
+| MUTARMSHARE | core: `spiralAngle`'s arm share over 3, not over the arm count | `PulseFrontTest.atNineArmsEveryPointLiesOnOneOfNineArms…` |
+| MUTYELLOW | the inner ball back to `[255, 220, 40]` | `everyParticleOfTheBurstIsOrange` |
+| MUTWHITE | the sparks `[255, 255, 255]` | `everyParticleOfTheBurstIsOrange` |
+| MUTKEY | the key back to the firework's large blast | `noFireworkKeyRemainsInTheBurst`, `theBurstIsInstant…OneDeepBoom` |
+| MUTPITCH | pitch 1.0 | `theBurstIsInstant…OneDeepBoom` |
+| MUTVOLUME | volume 2.0 (reach 32) | `theBurstAndTheTrailAreSent…`, `theBurstIsInstant…OneDeepBoom` |
+| MUTLONG | the sparks' `long_distance: false` | `theBurstAndTheTrailAreSent…` |
+| MUTCOMMENTKEY | a comment line naming the old twinkle's id | `noFireworkKeyRemainsInTheBurst` |
+| MUTGATEASK | SM8's question changed | `UltimatesThreeGateCommandTest.eachAskIsTheSeatsPlaceholderWording` |
+| MUTGATEMOVE | SM8's move 8 east made 0 | `…eachRowIsTheTwoGatesPick…ThenItsAskRow…` (staged as SM7R) |
+| MUTGATECELL | SM8's `expect_cell` replaced | `…eachRowIsTheTwoGatesPick…` |
+| MUTGATEVIEW20 | SF12's view at P + 20 replaced | `…eachRowIsTheTwoGatesPick…`, `theSolarFlareRowSetsHisView…` |
+| MUTHEADING | `### SM8` no longer a heading | `SelfTestScenariosTest.everyScenarioNamesARowOfItsGate` (the bounded control: read as `[]`) |
+
+**One guard was changed to admit the one-row gates:** `everyScenarioNamesARowOfItsGate` required at least 7 headings in
+every gate document (a control against a blind heading pattern); it now requires `min(7, the gate's rows)`, so a blind
+read of a one-row gate still fails (MUTHEADING).
+**OPEN FOR BEN:** the sparks' replacement (an orange burst to 5.5 in 20 ticks), the boom (`entity.generic.explode`, 0.7,
+3.0), SF12's wording.

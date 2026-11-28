@@ -170,3 +170,9 @@ gates:
 # solar-flare-2 (2026-11-28, the same branch): Solar Flare as Ben changed it (N1-N7), typed LAST in the same command.
 # docs/gates/GATE-solar-flare-2.md.
   - solar-flare-2
+# smolder-3 (2026-11-28, feat/ultimates-3): Smolder's nine arms (the seat's V1), one row, one ask; typed alone or FIRST
+# as /rpg selftest smolder-3+solar-flare-3. docs/gates/GATE-smolder-3.md.
+  - smolder-3
+# solar-flare-3 (2026-11-28, the same branch): Solar Flare's burst all orange with a deep boom (V2, V3), one row, one
+# ask; typed alone or LAST in the same command. docs/gates/GATE-solar-flare-3.md.
+  - solar-flare-3
