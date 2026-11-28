@@ -78,7 +78,8 @@ rows, then the two questions.**
 
 - **R0a:** `[Rpg] Build: <sha>`, `feat/ultimates-2-gate`'s head as `git ls-remote --heads origin feat/ultimates-2-gate`
   prints it, shortened. Not `-dirty`, not `unknown`.
-- **R0b:** `docs/gates/GATE-smolder-2-r0b.ps1` on the DEPLOYED jar: before `'--- absent'` **21 `PRESENT`, 0 `ABSENT`**;
+- **R0b:** `docs/gates/GATE-smolder-2-r0b.ps1` on the DEPLOYED jar: before `'--- absent'` **23 `PRESENT`, 0 `ABSENT`**
+  (21 until the seat's Q1 added two: the `long_distance` flag in `VisualLoader.class` and in `solar_flare_burst.yml`);
   between `'--- absent'` and `'--- controls'` **4 `ABSENT`, 0 `PRESENT`**; after `'--- controls'` **2 `PRESENT`, 0
   `ABSENT`**. Each `Has` and `ValueLine` needle was checked ABSENT in master `88858c40`'s main sources first (`git grep
   -F`, 0 files each; the value lines by an exact line match). **Run before commit on a jar built from this tree: the
@@ -281,6 +282,9 @@ damage 0 (level 1), charge 1.0: **`sent=20.000` or `40.000`**, cap **10**, each 
 - The spiral as drawn (a line, not dots; the 0.4 s fade) and the puff: SM7R's question.
 - The three fireballs one after another, each down his held view, and the firework as drawn: SF9R's question.
 - Pulse 2 and shot 2 landing on C+30 and C+10 on a real server (the settle hop on a real entity scheduler).
+- That a burst 32 blocks out is SEEN and HEARD (the seat's Q1: READ that without `force` it was never sent; every
+  particle step of the four visuals is now `long_distance`, and the burst's sounds reach 48). How loud a volume above 1
+  plays was not READ: SF9R's question is the reading.
 
 ## R0b, RUN BEFORE COMMIT
 
@@ -289,3 +293,8 @@ before the commit): **21 `PRESENT` / 0 `ABSENT`, then 4 `ABSENT` / 0 `PRESENT`, 
 needle was dropped while writing it: `duration_ticks`, which master already has in 20 files (it would have been a
 presence that witnessed nothing). This is a reading of a jar on this machine, not of the deployed one: R0b proper is the
 deployed jar's.
+
+> **RE-PREDICTED IN PLACE, 2026-11-28, before any approval (the gate was not yet frozen): THE SEAT'S Q1.** R0b gained
+> two needles for the long-distance fix (`feat/solar-flare-volley` `78e29fa8`). On a jar built from the rebased tree
+> (2026-11-28 00:58): **23 `PRESENT` / 0 `ABSENT`, then 4 `ABSENT` / 0 `PRESENT`, then 2 `PRESENT` / 0 `ABSENT`, as
+> predicted.** No row's line moves: no line prints whether a particle was forced or how far a sound reaches.

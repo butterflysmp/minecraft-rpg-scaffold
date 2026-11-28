@@ -1,7 +1,7 @@
 # GATE-smolder-2 R0b (2026-11-28, feat/ultimates-2-gate on feat/solar-flare-volley on feat/smolder-spiral on
 # feat/x6-clock): the deployed jar carries X6 (a) (the settle hop), Smolder retuned (M1-M4), Solar Flare changed (N1-N7),
 # X6 (b) (the view lint and lines) and both gates. One script for the one command.
-# Prediction: before '--- absent', 21 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 4 ABSENT and 0 PRESENT;
+# Prediction (re-predicted 2026-11-28 for the seat's Q1, before any approval): before '--- absent', 23 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 4 ABSENT and 0 PRESENT;
 # after '--- controls', 2 PRESENT and 0 ABSENT. Every Has and ValueLine needle was checked ABSENT in master 88858c40's main
 # sources first (git grep -F, 0 files each; the ValueLines by an exact line match on the file). 'duration_ticks' was
 # dropped as a needle: master has it in 20 files.
@@ -43,6 +43,8 @@ Has $sd 'DRIVE look yaw=' 'SelfTestDrivers.class (X6 (b): the look line)'
 Has $sm 'Four pulses, 1.5s apart, burst from your feet.' 'smolder.yml (N7, SEAT PLACEHOLDER)'
 Has $sf 'Fire three great fireballs, one after another.' 'solar_flare.yml (N7, SEAT PLACEHOLDER)'
 Has $bu 'entity.firework_rocket.large_blast' 'solar_flare_burst.yml (N4, Route B: the blast sound)'
+Has $vl 'long_distance' 'VisualLoader.class (Q1: the long-distance flag)'
+ValueLine $bu '    long_distance: true' 'solar_flare_burst.yml (Q1: sent and drawn past 32)'
 '--- absent'
 Entry 'content/visuals/smolder_ring.yml'
 Entry 'content/visuals/solar_flare_ring.yml'
